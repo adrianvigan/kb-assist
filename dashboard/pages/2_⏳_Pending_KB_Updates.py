@@ -719,9 +719,19 @@ try:
                                         st.markdown("### 📝 Provide Structured Feedback")
                                         st.caption("Help the engineer improve their submission by providing specific feedback. They'll be able to revise and resubmit.")
 
+                                        # Get values from session state if they exist
+                                        if f"general_feedback_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"general_feedback_{current_row_id}"] = ""
+                                        if f"technical_issues_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"technical_issues_{current_row_id}"] = ""
+                                        if f"missing_info_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"missing_info_{current_row_id}"] = ""
+                                        if f"suggestions_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"suggestions_{current_row_id}"] = ""
+
                                         # General Feedback
                                         st.markdown("**General Feedback** (Required)")
-                                        general_feedback = st.text_area(
+                                        st.text_area(
                                             "Overall assessment and main concerns",
                                             height=100,
                                             placeholder="Example: The troubleshooting steps are incomplete and need more detail...",
@@ -731,7 +741,7 @@ try:
 
                                         # Technical Issues
                                         st.markdown("**Technical Issues**")
-                                        technical_issues = st.text_area(
+                                        st.text_area(
                                             "Technical problems or inaccuracies",
                                             height=80,
                                             placeholder="Example: The root cause analysis is missing key diagnostic steps...",
@@ -741,7 +751,7 @@ try:
 
                                         # Missing Information
                                         st.markdown("**Missing Information**")
-                                        missing_info = st.text_area(
+                                        st.text_area(
                                             "Required information that is missing",
                                             height=80,
                                             placeholder="Example: Please include error messages, logs, or screenshots...",
@@ -751,13 +761,19 @@ try:
 
                                         # Improvement Suggestions
                                         st.markdown("**Suggestions for Improvement**")
-                                        suggestions = st.text_area(
+                                        st.text_area(
                                             "Specific recommendations",
                                             height=80,
                                             placeholder="Example: Consider adding a step about checking system requirements...",
                                             key=f"suggestions_{current_row_id}",
                                             label_visibility="collapsed"
                                         )
+
+                                        # Read values from session state
+                                        general_feedback = st.session_state[f"general_feedback_{current_row_id}"]
+                                        technical_issues = st.session_state[f"technical_issues_{current_row_id}"]
+                                        missing_info = st.session_state[f"missing_info_{current_row_id}"]
+                                        suggestions = st.session_state[f"suggestions_{current_row_id}"]
 
                                         st.divider()
 
@@ -832,7 +848,10 @@ try:
                                                                 base_url = st.secrets['BASE_URL']
                                                         except:
                                                             pass
-                                                        revision_link = f"{base_url}?token={revision_token}"
+                                                        # Revision portal is a page in the dashboard
+                                                        import urllib.parse
+                                                        page_name = urllib.parse.quote('98_✏️_Revision_Portal')
+                                                        revision_link = f"{base_url}/{page_name}?token={revision_token}"
 
                                                         # Send follow-up email
                                                         with st.spinner("📧 Sending follow-up email..."):

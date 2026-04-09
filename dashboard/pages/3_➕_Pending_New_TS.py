@@ -736,7 +736,10 @@ try:
                                                             base_url = st.secrets['BASE_URL']
                                                     except:
                                                         pass
-                                                    revision_link = f"{base_url}?token={revision_token}"
+                                                    # Revision portal is a page in the dashboard
+                                                    import urllib.parse
+                                                    page_name = urllib.parse.quote('98_✏️_Revision_Portal')
+                                                    revision_link = f"{base_url}/{page_name}?token={revision_token}"
 
                                                     with st.spinner("📧 Sending follow-up email..."):
                                                         email_result = send_rejection_email(
