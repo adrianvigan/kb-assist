@@ -270,21 +270,23 @@ if submit_revision:
             is_new_kb_request = (report_type == 'no_kb_exists')
 
             # Generate unique request_id for revision
-            # Find next available revision number
+            # Always create new unique ID: REQ-000083-R1, REQ-000083-R2, etc.
             if is_new_kb_request:
                 cursor.execute("""
                     SELECT COUNT(*) FROM new_kb_requests
                     WHERE request_id LIKE %s
                 """, (f"{request_id}%",))
                 revision_count = cursor.fetchone()[0]
-                new_request_id = f"{request_id}-R{revision_count}" if revision_count > 1 else request_id
+                # revision_count includes original, so first revision is -R1
+                new_request_id = f"{request_id}-R{revision_count}"
             else:
                 cursor.execute("""
                     SELECT COUNT(*) FROM kb_update_requests
                     WHERE request_id LIKE %s
                 """, (f"{request_id}%",))
                 revision_count = cursor.fetchone()[0]
-                new_request_id = f"{request_id}-R{revision_count}" if revision_count > 1 else request_id
+                # revision_count includes original, so first revision is -R1
+                new_request_id = f"{request_id}-R{revision_count}"
 
             if is_new_kb_request:
                 # Create revised new_kb_requests entry
