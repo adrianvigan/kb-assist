@@ -185,13 +185,16 @@ try:
                     if pd.notna(row['kb_article_id']):
                         st.markdown("### 📄 Current KB Article")
 
-                        # Fetch full KB data
-                        kb_full = pd.read_sql_query(f"""
-                            SELECT kb_number, title, content, last_updated, product, category, url
-                            FROM kb_articles
-                            WHERE kb_number = '{row['kb_article_id']}'
-                            LIMIT 1
-                        """, conn)
+                        # Try to fetch full KB data (table may not exist)
+                        try:
+                            kb_full = pd.read_sql_query(f"""
+                                SELECT kb_number, title, content, last_updated, product, category, url
+                                FROM kb_articles
+                                WHERE kb_number = '{row['kb_article_id']}'
+                                LIMIT 1
+                            """, conn)
+                        except:
+                            kb_full = pd.DataFrame()  # Empty dataframe if table doesn't exist
 
                         if len(kb_full) > 0:
                             kb = kb_full.iloc[0]
@@ -255,7 +258,10 @@ try:
                                     unsafe_allow_html=True
                                 )
                         else:
-                            st.warning(f"⚠️ KB {row['kb_article_id']} not found in database")
+                            # Show basic KB info with link when full data not available
+                            kb_url = f"https://success.trendmicro.com/dcx/s/solution/000{row['kb_article_id']}?language=en_US"
+                            st.markdown(f"**[KB-{row['kb_article_id']}]({kb_url})**: {row['kb_article_title']}")
+                            st.info("💡 Full KB article content not available in database. Click the link above to view on Trend Micro Success Portal.")
 
                     st.markdown("---")
 
