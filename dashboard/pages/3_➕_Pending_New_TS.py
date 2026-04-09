@@ -653,16 +653,6 @@ try:
                                         st.markdown("---")
                                         st.caption(f"📧 Engineer will be notified: {engineer_email or 'Unknown'}")
 
-                                        # Initialize session state for feedback fields if not exists
-                                        if f"general_feedback_new_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"general_feedback_new_{current_row_id}"] = ''
-                                        if f"technical_issues_new_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"technical_issues_new_{current_row_id}"] = ''
-                                        if f"missing_info_new_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"missing_info_new_{current_row_id}"] = ''
-                                        if f"suggestions_new_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"suggestions_new_{current_row_id}"] = ''
-
                                         # Structured feedback fields
                                         st.markdown("**General Feedback** (Required)")
                                         general_feedback = st.text_area(

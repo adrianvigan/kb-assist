@@ -719,16 +719,6 @@ try:
                                         st.markdown("### 📝 Provide Structured Feedback")
                                         st.caption("Help the engineer improve their submission by providing specific feedback. They'll be able to revise and resubmit.")
 
-                                        # Initialize session state for feedback fields if not exists
-                                        if f"general_feedback_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"general_feedback_{current_row_id}"] = ''
-                                        if f"technical_issues_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"technical_issues_{current_row_id}"] = ''
-                                        if f"missing_info_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"missing_info_{current_row_id}"] = ''
-                                        if f"suggestions_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"suggestions_{current_row_id}"] = ''
-
                                         # General Feedback
                                         st.markdown("**General Feedback** (Required)")
                                         general_feedback = st.text_area(
