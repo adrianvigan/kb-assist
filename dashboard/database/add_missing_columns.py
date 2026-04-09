@@ -13,7 +13,8 @@ def add_columns():
         cursor.execute('''
             ALTER TABLE engineer_reports
             ADD COLUMN IF NOT EXISTS kb_article_link VARCHAR(500),
-            ADD COLUMN IF NOT EXISTS kb_created_id VARCHAR(50)
+            ADD COLUMN IF NOT EXISTS kb_created_id VARCHAR(50),
+            ADD COLUMN IF NOT EXISTS engineer_notes TEXT
         ''')
         conn.commit()
         print("engineer_reports columns added successfully")
