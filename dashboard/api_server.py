@@ -482,8 +482,11 @@ print("="*80, flush=True)
 
 def run_api_server():
     """Run Flask API server"""
-    # Bind to 0.0.0.0 to accept connections from VDI
-    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    # Get port from environment variable (Render.com) or default to 5000 (localhost)
+    port = int(os.getenv('PORT', 5000))
+    print(f"🚀 Starting API server on port {port}...", flush=True)
+    # Bind to 0.0.0.0 to accept connections from anywhere
+    app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
 
 if __name__ == '__main__':
     run_api_server()
