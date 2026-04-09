@@ -902,25 +902,11 @@ try:
                                         )
 
                                         if result and result.get('content'):
-                                            # Save ONLY the new step as draft
+                                            # Get the generated new step content
                                             new_step_content = result.get('content', '')
 
-                                            cursor = conn.cursor()
-                                            cursor.execute("""
-                                                INSERT INTO kb_drafts (
-                                                    report_id, title, content, created_at, status
-                                                ) VALUES (%s, %s, %s, %s, 'draft')
-                                            """, (
-                                                row['id'],
-                                                f"New Step for KB-{kb['kb_number']}",
-                                                new_step_content,
-                                                datetime.now().isoformat()
-                                            ))
-                                            draft_id = cursor.lastrowid
-                                            conn.commit()
-
-                                            # Show modal dialog with JUST the new step
-                                            @st.dialog(f"🤖 AI-Generated New Step (Draft ID: {draft_id})", width="large")
+                                            # Show modal dialog with the generated step (no database saving)
+                                            @st.dialog(f"🤖 AI-Generated New Step", width="large")
                                             def show_draft():
                                                 st.markdown(f"### 📝 New Troubleshooting Step")
                                                 st.caption(f"For KB-{kb['kb_number']} - {kb['title']}")
@@ -931,7 +917,7 @@ try:
                                                     "New Step Content (you can edit this)",
                                                     value=new_step_content,
                                                     height=300,
-                                                    key=f"edit_step_{draft_id}"
+                                                    key=f"edit_step_{row['id']}"
                                                 )
 
                                                 st.divider()
@@ -946,7 +932,7 @@ try:
                                                 st.markdown("### 📝 Apply to KB Article")
                                                 st.caption("Click below to insert this step into the actual KB article")
 
-                                                if st.button("📝 Apply to KB and Show Complete Article", key=f"apply_kb_{draft_id}", use_container_width=True):
+                                                if st.button("📝 Apply to KB and Show Complete Article", key=f"apply_kb_{row['id']}", use_container_width=True):
                                                     # Apply the step to the KB
                                                     from ai_kb_generator import apply_incremental_update_to_kb
 
@@ -955,18 +941,6 @@ try:
                                                         new_step_content=edited_step,
                                                         update_type=update_type
                                                     )
-
-                                                    # Update the draft with complete KB
-                                                    conn_update = get_db_connection()
-                                                    cursor = conn_update.cursor()
-                                                    cursor.execute("""
-                                                        UPDATE kb_drafts
-                                                        SET content = %s,
-                                                            title = %s
-                                                        WHERE id = %s
-                                                    """, (updated_kb_html, f"KB-{kb['kb_number']} - {kb['title']} (COMPLETE)", draft_id))
-                                                    conn_update.commit()
-                                                    conn_update.close()
 
                                                     st.success("✅ Step applied to KB!")
                                                     st.divider()
