@@ -49,7 +49,7 @@ def migrate_kb_articles():
     sqlite_cursor.execute("""
         SELECT
             kb_number, title, url, content,
-            article_html, product, created_date, last_updated
+            article_html, product, scraped_at, last_updated
         FROM kb_articles
     """)
 
@@ -62,7 +62,7 @@ def migrate_kb_articles():
     skipped = 0
 
     for idx, article in enumerate(kb_articles, 1):
-        kb_number, title, url, content, article_html, product, created_date, last_updated = article
+        kb_number, title, url, content, article_html, product, scraped_at, last_updated = article
 
         try:
             pg_cursor.execute("""
@@ -76,7 +76,7 @@ def migrate_kb_articles():
                     article_html = EXCLUDED.article_html,
                     product = EXCLUDED.product,
                     last_updated = EXCLUDED.last_updated
-            """, (kb_number, title, url, content, article_html, product, created_date, last_updated))
+            """, (kb_number, title, url, content, article_html, product, scraped_at, last_updated))
             inserted += 1
         except Exception as e:
             print(f"⚠️  Error inserting KB-{kb_number}: {e}")
