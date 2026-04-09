@@ -519,7 +519,7 @@ try:
                                                         cursor_approve.execute("""
                                                             SELECT engineer_email, engineer_name
                                                             FROM engineer_reports
-                                                            WHERE id = ?
+                                                            WHERE id = %s
                                                         """, (report_id,))
                                                         engineer_data = cursor_approve.fetchone()
 
@@ -559,18 +559,18 @@ try:
                                                                 cursor_approve.execute("""
                                                                     UPDATE new_kb_requests
                                                                     SET status = 'approved',
-                                                                        reviewed_date = ?,
-                                                                        reviewed_by = ?,
-                                                                        kb_created_id = ?
-                                                                    WHERE id = ?
+                                                                        reviewed_date = %s,
+                                                                        reviewed_by = %s,
+                                                                        kb_created_id = %s
+                                                                    WHERE id = %s
                                                                 """, (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), siebel_id.strip(), kb_link.strip(), current_row_id))
 
                                                                 # Close ALL other records with the same request_id (past and future revisions)
                                                                 cursor_approve.execute("""
                                                                     UPDATE new_kb_requests
                                                                     SET status = 'closed'
-                                                                    WHERE request_id = ?
-                                                                      AND id != ?
+                                                                    WHERE request_id = %s
+                                                                      AND id != %s
                                                                 """, (current_request_id, current_row_id))
 
                                                                 closed_count = cursor_approve.rowcount
@@ -726,10 +726,10 @@ try:
                                                         cursor_reject.execute("""
                                                             UPDATE new_kb_requests
                                                             SET status = 'pending follow-up',
-                                                                reviewed_date = ?,
-                                                                reviewed_by = ?,
-                                                                notes = ?
-                                                            WHERE id = ?
+                                                                reviewed_date = %s,
+                                                                reviewed_by = %s,
+                                                                notes = %s
+                                                            WHERE id = %s
                                                         """, (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), current_siebel, feedback, current_row_id))
                                                         conn_reject.commit()
                                                         conn_reject.close()
@@ -752,10 +752,10 @@ try:
                                                     cursor_reject.execute("""
                                                         UPDATE new_kb_requests
                                                         SET status = 'pending follow-up',
-                                                            reviewed_date = ?,
-                                                            reviewed_by = ?,
-                                                            notes = ?
-                                                        WHERE id = ?
+                                                            reviewed_date = %s,
+                                                            reviewed_by = %s,
+                                                            notes = %s
+                                                        WHERE id = %s
                                                     """, (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), current_siebel, feedback, current_row_id))
                                                     conn_reject.commit()
                                                     conn_reject.close()
@@ -858,10 +858,10 @@ try:
                                             cursor_close.execute("""
                                                 UPDATE new_kb_requests
                                                 SET status = 'rejected',
-                                                    reviewed_date = ?,
-                                                    reviewed_by = ?,
-                                                    notes = ?
-                                                WHERE id = ?
+                                                    reviewed_date = %s,
+                                                    reviewed_by = %s,
+                                                    notes = %s
+                                                WHERE id = %s
                                             """, (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), current_reject_siebel,
                                                   f"[PERMANENTLY REJECTED]\n{reject_reason}", current_reject_row_id))
                                             conn_close.commit()
@@ -894,8 +894,8 @@ try:
                                 cursor.execute("""
                                     UPDATE new_kb_requests
                                     SET status = 'completed',
-                                        kb_created_id = ?
-                                    WHERE id = ?
+                                        kb_created_id = %s
+                                    WHERE id = %s
                                 """, (kb_id, row['id']))
                                 conn.commit()
                                 st.success(f"Completed! KB {kb_id} created")
@@ -946,8 +946,8 @@ try:
                             cursor = conn.cursor()
                             cursor.execute("""
                                 UPDATE new_kb_requests
-                                SET notes = ?
-                                WHERE id = ?
+                                SET notes = %s
+                                WHERE id = %s
                             """, (notes, row['id']))
                             conn.commit()
                             st.success("Notes saved!")

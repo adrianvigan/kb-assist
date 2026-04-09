@@ -247,13 +247,13 @@ try:
                             cursor.execute("""
                                 UPDATE kb_update_requests
                                 SET status = 'pending'
-                                WHERE id = ?
+                                WHERE id = %s
                             """, (row['id'],))
                         else:
                             cursor.execute("""
                                 UPDATE new_kb_requests
                                 SET status = 'pending'
-                                WHERE id = ?
+                                WHERE id = %s
                             """, (row['id'],))
                         conn.commit()
                         st.success(f"✅ {row['request_id']} reset to pending")
@@ -313,20 +313,20 @@ try:
                                         cursor_cancel.execute("""
                                             UPDATE kb_update_requests
                                             SET status = 'rejected',
-                                                reviewed_date = ?,
-                                                reviewed_by = ?,
-                                                notes = ?
-                                            WHERE id = ?
+                                                reviewed_date = %s,
+                                                reviewed_by = %s,
+                                                notes = %s
+                                            WHERE id = %s
                                         """, (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), cancel_siebel_id.strip(),
                                               f"[CANCELLED]\n{cancel_reason}", current_cancel_id))
                                     else:
                                         cursor_cancel.execute("""
                                             UPDATE new_kb_requests
                                             SET status = 'rejected',
-                                                reviewed_date = ?,
-                                                reviewed_by = ?,
-                                                notes = ?
-                                            WHERE id = ?
+                                                reviewed_date = %s,
+                                                reviewed_by = %s,
+                                                notes = %s
+                                            WHERE id = %s
                                         """, (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), cancel_siebel_id.strip(),
                                               f"[CANCELLED]\n{cancel_reason}", current_cancel_id))
 
