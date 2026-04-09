@@ -574,23 +574,31 @@ try:
                                         st.markdown("### ✅ Approve KB Update")
                                         st.caption("Provide the KB article link to notify the engineer.")
 
+                                        # Initialize session state for this dialog if not exists
+                                        if f"kb_link_input_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"kb_link_input_{current_row_id}"] = current_kb_link or ""
+
                                         kb_link = st.text_input(
                                             "KB Article Link (Required)",
-                                            value=current_kb_link,
+                                            value=st.session_state[f"kb_link_input_{current_row_id}"],
                                             placeholder="https://helpcenter.trendmicro.com/en-us/article/tmka-XXXXX",
                                             key=f"approve_kb_link_{current_row_id}"
                                         )
+
+                                        # Update session state with current input
+                                        st.session_state[f"kb_link_input_{current_row_id}"] = kb_link
 
                                         st.divider()
 
                                         col1, col2 = st.columns(2)
                                         with col1:
-                                            cancel_btn = st.button("Cancel", use_container_width=True, key=f"cancel_approve_{current_row_id}")
+                                            if st.button("Cancel", use_container_width=True, key=f"cancel_approve_{current_row_id}"):
+                                                # Clear session state
+                                                if f"kb_link_input_{current_row_id}" in st.session_state:
+                                                    del st.session_state[f"kb_link_input_{current_row_id}"]
+                                                st.rerun()
                                         with col2:
                                             submit_btn = st.button("✉️ Send Approval Email", use_container_width=True, type="primary", key=f"submit_approve_{current_row_id}")
-
-                                        if cancel_btn:
-                                            st.rerun()
 
                                         if submit_btn:
                                             if not kb_link or len(kb_link.strip()) < 10:
@@ -673,6 +681,10 @@ try:
                                                                 st.info(f"📋 Status updated to: **Approved** (awaiting verification)")
                                                                 st.balloons()
 
+                                                                # Clear session state
+                                                                if f"kb_link_input_{current_row_id}" in st.session_state:
+                                                                    del st.session_state[f"kb_link_input_{current_row_id}"]
+
                                                                 # Wait before reloading
                                                                 import time
                                                                 time.sleep(2)
@@ -707,26 +719,20 @@ try:
                                         st.markdown("### 📝 Provide Structured Feedback")
                                         st.caption("Help the engineer improve their submission by providing specific feedback. They'll be able to revise and resubmit.")
 
-                                        # Check for saved draft
-                                        draft_key = f"feedback_draft_{current_row_id}"
-                                        if draft_key in st.session_state:
-                                            st.info("💾 Draft feedback restored from last session")
-                                            draft_data = st.session_state[draft_key]
-                                            default_general = draft_data.get('general', '')
-                                            default_technical = draft_data.get('technical', '')
-                                            default_missing = draft_data.get('missing', '')
-                                            default_suggestions = draft_data.get('suggestions', '')
-                                        else:
-                                            default_general = ''
-                                            default_technical = ''
-                                            default_missing = ''
-                                            default_suggestions = ''
+                                        # Initialize session state for feedback fields if not exists
+                                        if f"general_feedback_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"general_feedback_{current_row_id}"] = ''
+                                        if f"technical_issues_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"technical_issues_{current_row_id}"] = ''
+                                        if f"missing_info_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"missing_info_{current_row_id}"] = ''
+                                        if f"suggestions_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"suggestions_{current_row_id}"] = ''
 
                                         # General Feedback
                                         st.markdown("**General Feedback** (Required)")
                                         general_feedback = st.text_area(
                                             "Overall assessment and main concerns",
-                                            value=default_general,
                                             height=100,
                                             placeholder="Example: The troubleshooting steps are incomplete and need more detail...",
                                             key=f"general_feedback_{current_row_id}",
@@ -767,13 +773,16 @@ try:
 
                                         col1, col2 = st.columns(2)
                                         with col1:
-                                            cancel_btn = st.button("Cancel", use_container_width=True, key=f"cancel_reject_{current_row_id}")
+                                            if st.button("Cancel", use_container_width=True, key=f"cancel_reject_{current_row_id}"):
+                                                # Clear session state
+                                                for key in [f"general_feedback_{current_row_id}", f"technical_issues_{current_row_id}",
+                                                           f"missing_info_{current_row_id}", f"suggestions_{current_row_id}"]:
+                                                    if key in st.session_state:
+                                                        del st.session_state[key]
+                                                st.rerun()
 
                                         with col2:
                                             submit_btn = st.button("✉️ Send Follow-up Email", use_container_width=True, type="primary", key=f"submit_reject_{current_row_id}")
-
-                                        if cancel_btn:
-                                            st.rerun()
 
                                         if submit_btn:
                                             # Combine all feedback
@@ -825,8 +834,16 @@ try:
                                                         from utils.email_sender import send_rejection_email
 
                                                         revision_token = generate_token(current_request_id, 'revision')
-                                                        # Link to standalone revision portal (runs on port 8502)
-                                                        revision_link = f"http://localhost:8502?token={revision_token}"
+                                                        # Link to revision portal (use production URL from env/secrets)
+                                                        base_url = os.getenv('BASE_URL', 'http://localhost:8501')
+                                                        # For Streamlit Cloud, secrets override env
+                                                        try:
+                                                            import streamlit as st
+                                                            if hasattr(st, 'secrets') and 'BASE_URL' in st.secrets:
+                                                                base_url = st.secrets['BASE_URL']
+                                                        except:
+                                                            pass
+                                                        revision_link = f"{base_url}?token={revision_token}"
 
                                                         # Send follow-up email
                                                         with st.spinner("📧 Sending follow-up email..."):
@@ -859,6 +876,12 @@ try:
                                                             st.info(f"📧 The engineer has been notified with structured feedback")
                                                             st.info(f"📋 Status updated to: **Pending Follow-up**")
                                                             st.balloons()
+
+                                                            # Clear session state
+                                                            for key in [f"general_feedback_{current_row_id}", f"technical_issues_{current_row_id}",
+                                                                       f"missing_info_{current_row_id}", f"suggestions_{current_row_id}"]:
+                                                                if key in st.session_state:
+                                                                    del st.session_state[key]
 
                                                             # Wait before reloading
                                                             import time
