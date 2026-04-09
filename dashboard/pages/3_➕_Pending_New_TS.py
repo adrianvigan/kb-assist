@@ -653,9 +653,19 @@ try:
                                         st.markdown("---")
                                         st.caption(f"📧 Engineer will be notified: {engineer_email or 'Unknown'}")
 
+                                        # Get values from session state if they exist
+                                        if f"general_feedback_new_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"general_feedback_new_{current_row_id}"] = ""
+                                        if f"technical_issues_new_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"technical_issues_new_{current_row_id}"] = ""
+                                        if f"missing_info_new_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"missing_info_new_{current_row_id}"] = ""
+                                        if f"suggestions_new_{current_row_id}" not in st.session_state:
+                                            st.session_state[f"suggestions_new_{current_row_id}"] = ""
+
                                         # Structured feedback fields
                                         st.markdown("**General Feedback** (Required)")
-                                        general_feedback = st.text_area(
+                                        st.text_area(
                                             "Overall assessment and main concerns",
                                             height=100,
                                             placeholder="Example: The troubleshooting steps need more detail and structure...",
@@ -664,7 +674,7 @@ try:
                                         )
 
                                         st.markdown("**Technical Issues**")
-                                        technical_issues = st.text_area(
+                                        st.text_area(
                                             "Specific technical problems or inaccuracies",
                                             height=80,
                                             placeholder="Example: Missing root cause analysis, unclear error handling...",
@@ -673,7 +683,7 @@ try:
                                         )
 
                                         st.markdown("**Missing Information**")
-                                        missing_info = st.text_area(
+                                        st.text_area(
                                             "What information is missing",
                                             height=80,
                                             placeholder="Example: Need error messages, screenshots, version details...",
@@ -682,13 +692,19 @@ try:
                                         )
 
                                         st.markdown("**Suggestions for Improvement**")
-                                        suggestions = st.text_area(
+                                        st.text_area(
                                             "How to improve the submission",
                                             height=80,
                                             placeholder="Example: Add step-by-step instructions, include prerequisites...",
                                             key=f"suggestions_new_{current_row_id}",
                                             label_visibility="collapsed"
                                         )
+
+                                        # Read values from session state
+                                        general_feedback = st.session_state[f"general_feedback_new_{current_row_id}"]
+                                        technical_issues = st.session_state[f"technical_issues_new_{current_row_id}"]
+                                        missing_info = st.session_state[f"missing_info_new_{current_row_id}"]
+                                        suggestions = st.session_state[f"suggestions_new_{current_row_id}"]
 
                                         st.markdown("---")
 
