@@ -5,11 +5,14 @@ Follows Trend Micro KB format learned from scraped articles
 """
 import os
 import sys
-import sqlite3
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 import json
 from datetime import datetime
+
+# Import PostgreSQL connection
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'database'))
+from azure_db import get_connection
 
 # Fix Windows console encoding for emojis
 if sys.platform == 'win32':
@@ -26,8 +29,6 @@ AZURE_ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
 AZURE_API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
 AZURE_DEPLOYMENT = os.getenv('AZURE_OPENAI_DEPLOYMENT')
 API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION', '2024-02-15-preview')
-
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'database', 'kb_assist.db')
 
 class KBGenerator:
     def __init__(self):
@@ -48,17 +49,17 @@ class KBGenerator:
 
     def get_kb_examples(self, product=None, limit=5):
         """Get sample KB articles to teach AI the format"""
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         if product:
             query = '''
                 SELECT title, content, article_html
                 FROM kb_articles
-                WHERE product = ?
+                WHERE product = %s
                 AND length(content) > 500
                 ORDER BY RANDOM()
-                LIMIT ?
+                LIMIT %s
             '''
             cursor.execute(query, (product, limit))
         else:
@@ -67,7 +68,7 @@ class KBGenerator:
                 FROM kb_articles
                 WHERE length(content) > 500
                 ORDER BY RANDOM()
-                LIMIT ?
+                LIMIT %s
             '''
             cursor.execute(query, (limit,))
 
@@ -78,7 +79,7 @@ class KBGenerator:
 
     def get_report_data(self, report_id):
         """Get engineer report data"""
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         cursor.execute('''
@@ -86,7 +87,7 @@ class KBGenerator:
                    product, product_version, os, problem_category, subcategory,
                    report_type, new_troubleshooting, engineer_name, created_at, engineer_notes
             FROM engineer_reports
-            WHERE id = ?
+            WHERE id = %s
         ''', (report_id,))
 
         row = cursor.fetchone()
@@ -369,7 +370,7 @@ Return the complete UPDATED KB in HTML format. Include:
 
     def save_kb_draft(self, report_id, kb_draft):
         """Save generated KB draft to database"""
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
         # Create table if not exists
@@ -428,13 +429,13 @@ Return the complete UPDATED KB in HTML format. Include:
 
         try:
             # Fetch current KB content from database
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_connection()
             cursor = conn.cursor()
 
             cursor.execute("""
                 SELECT title, content, product
                 FROM kb_articles
-                WHERE kb_number = ?
+                WHERE kb_number = %s
                 LIMIT 1
             """, (kb_number,))
 
@@ -926,7 +927,7 @@ def test_generator(report_id=None):
 
         if not report_id:
             # Get the latest "no_kb_exists" report
-            conn = sqlite3.connect(DB_PATH)
+            conn = get_connection()
             cursor = conn.cursor()
             cursor.execute('''
                 SELECT id FROM engineer_reports
