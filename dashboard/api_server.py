@@ -300,6 +300,12 @@ def submit_report():
                 # Extract KB info
                 kb_number = extract_kb_number_from_url(kb_article_link)
                 kb_title = get_kb_title_from_db(kb_number)
+
+                # If KB title not found in database, use placeholder
+                if not kb_title:
+                    kb_title = f"KB Article {kb_number}"
+                    print(f"[DEBUG] KB title not found in database, using placeholder: {kb_title}", flush=True)
+
                 issue_desc, proposed_steps = parse_perts_for_kb_update(new_troubleshooting)
                 print(f"[DEBUG] KB Number: {kb_number}, KB Title: {kb_title}", flush=True)
                 print(f"[DEBUG] Case URL: {case_url}", flush=True)

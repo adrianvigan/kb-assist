@@ -521,8 +521,11 @@ try:
                     elif report_type == 'kb_outdated':
                         st.write(f"**Type:** 🟠 KB Outdated")
                         st.caption("Engineer found outdated information in the KB")
+                    elif report_type == 'kb_update_request':
+                        st.write(f"**Type:** 🔄 KB Update Request")
+                        st.caption("Engineer submitted KB update via extension")
                     else:
-                        st.write(f"**Type:** ⚪ {report_type}")
+                        st.write(f"**Type:** ⚪ {report_type if report_type and report_type != 'None' else 'Not specified'}")
 
                     st.write(f"**Submitted by:** {row['submitted_by']}")
                     st.write(f"**Date:** {pd.to_datetime(row['submitted_date'], format='ISO8601').strftime('%Y-%m-%d')}")
