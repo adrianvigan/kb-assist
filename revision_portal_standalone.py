@@ -52,16 +52,44 @@ try:
     parts = token.split('_')
     if len(parts) >= 2 and parts[0] == 'revision':
         target_request_id = parts[1]
+        st.info(f"🔍 DEBUG: Looking for request_id: {target_request_id}")
     else:
         st.error("❌ Invalid token format")
+        st.code(f"Token: {token}")
+        st.code(f"Parts: {parts}")
         st.stop()
-except:
-    st.error("❌ Invalid revision token")
+except Exception as e:
+    st.error(f"❌ Invalid revision token: {str(e)}")
     st.stop()
 
 # Look up request by request_id
 conn = get_connection()
 cursor = conn.cursor()
+
+# First, check if request exists at all (for debugging)
+cursor.execute("""
+    SELECT request_id, status
+    FROM kb_update_requests
+    WHERE request_id = %s
+    ORDER BY id DESC
+    LIMIT 1
+""", (target_request_id,))
+debug_result = cursor.fetchone()
+
+if debug_result:
+    st.info(f"🔍 DEBUG: Found request with status: {debug_result[1]}")
+else:
+    st.warning("🔍 DEBUG: Request not found in kb_update_requests, checking new_kb_requests...")
+    cursor.execute("""
+        SELECT request_id, status
+        FROM new_kb_requests
+        WHERE request_id = %s
+        ORDER BY id DESC
+        LIMIT 1
+    """, (target_request_id,))
+    debug_result2 = cursor.fetchone()
+    if debug_result2:
+        st.info(f"🔍 DEBUG: Found request in new_kb_requests with status: {debug_result2[1]}")
 
 # Try kb_update_requests first
 cursor.execute("""
@@ -121,6 +149,7 @@ if not result:
 if not result:
     st.error("❌ Request not found or revision link has expired")
     st.info("This request may have already been revised or approved. Please contact your KB manager if you believe this is an error.")
+    st.caption("Expected status: 'pending follow-up' or 'rejected'")
     conn.close()
     st.stop()
 
