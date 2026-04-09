@@ -1,8 +1,8 @@
 """
-Azure SQL Database Connection Module (using pymssql - no ODBC required)
+Database Connection Module (PostgreSQL via Neon.tech)
 Handles all database connections and operations for KB Assist
 """
-import pymssql
+import psycopg2
 import os
 from dotenv import load_dotenv
 
@@ -12,35 +12,48 @@ load_dotenv()
 # Try to import streamlit for secrets (Streamlit Cloud)
 try:
     import streamlit as st
-    # Use Streamlit secrets if available (Streamlit Cloud)
-    SERVER = st.secrets.get('AZURE_SQL_SERVER', os.getenv('AZURE_SQL_SERVER'))
-    DATABASE = st.secrets.get('AZURE_SQL_DATABASE', os.getenv('AZURE_SQL_DATABASE'))
-    USERNAME = st.secrets.get('AZURE_SQL_USERNAME', os.getenv('AZURE_SQL_USERNAME'))
-    PASSWORD = st.secrets.get('AZURE_SQL_PASSWORD', os.getenv('AZURE_SQL_PASSWORD'))
-except ImportError:
+    # Check if we're actually running in Streamlit Cloud (secrets available)
+    if hasattr(st, 'secrets') and len(st.secrets) > 0:
+        DATABASE_URL = st.secrets.get('DATABASE_URL', os.getenv('DATABASE_URL'))
+    else:
+        # Streamlit imported but no secrets - use environment variables
+        DATABASE_URL = os.getenv('DATABASE_URL')
+except (ImportError, Exception):
     # Fall back to environment variables (local development)
-    SERVER = os.getenv('AZURE_SQL_SERVER')
-    DATABASE = os.getenv('AZURE_SQL_DATABASE')
-    USERNAME = os.getenv('AZURE_SQL_USERNAME')
-    PASSWORD = os.getenv('AZURE_SQL_PASSWORD')
+    DATABASE_URL = os.getenv('DATABASE_URL')
 
 def get_connection():
     """
-    Get a connection to Azure SQL Database using pymssql
-    Returns: pymssql.Connection object
+    Get a connection to PostgreSQL Database (Neon.tech)
+    Returns: psycopg2.Connection object
     """
     try:
-        conn = pymssql.connect(
-            server=SERVER,
-            user=USERNAME,
-            password=PASSWORD,
-            database=DATABASE,
-            as_dict=False
-        )
+        conn = psycopg2.connect(DATABASE_URL)
         return conn
-    except pymssql.Error as e:
-        print(f"Error connecting to Azure SQL Database: {e}")
+    except psycopg2.Error as e:
+        print(f"Error connecting to PostgreSQL Database: {e}")
         raise
+
+def get_connection_context():
+    """
+    Context manager for database connections
+    Automatically commits and closes connection
+    """
+    from contextlib import contextmanager
+
+    @contextmanager
+    def _context():
+        conn = get_connection()
+        try:
+            yield conn
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise e
+        finally:
+            conn.close()
+
+    return _context()
 
 def test_connection():
     """
@@ -50,18 +63,18 @@ def test_connection():
     try:
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT @@VERSION")
+        cursor.execute("SELECT version()")
         version = cursor.fetchone()
-        print(f"✅ Connected to Azure SQL Database successfully!")
-        print(f"Version: {version[0][:50]}...")
+        print("Connected to PostgreSQL Database successfully!")
+        print(f"Version: {version[0][:80]}...")
         cursor.close()
         conn.close()
         return True
     except Exception as e:
-        print(f"❌ Failed to connect to Azure SQL Database: {e}")
+        print(f"Failed to connect to PostgreSQL Database: {e}")
         return False
 
 if __name__ == '__main__':
     # Test connection when run directly
-    print("Testing Azure SQL Database connection...")
+    print("Testing PostgreSQL Database connection...")
     test_connection()

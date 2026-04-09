@@ -139,7 +139,7 @@ with st.sidebar:
 st.markdown('<p class="main-header">📊 KB Assist Dashboard</p>', unsafe_allow_html=True)
 st.markdown('<p class="sub-header">Real-time tracking of KB performance from support engineers</p>', unsafe_allow_html=True)
 
-# Check Azure SQL database connection
+# Check PostgreSQL database connection
 try:
     test_conn = get_db_connection()
     test_conn.close()
@@ -147,13 +147,10 @@ except Exception as e:
     st.error("❌ Database connection failed!")
     st.error(f"Error: {str(e)}")
     st.info("""
-    **Azure SQL Configuration Required:**
+    **PostgreSQL Configuration Required:**
 
-    Make sure these environment variables are set in Azure Portal:
-    - AZURE_SQL_SERVER
-    - AZURE_SQL_DATABASE
-    - AZURE_SQL_USERNAME
-    - AZURE_SQL_PASSWORD
+    Make sure the DATABASE_URL environment variable is set in Streamlit Cloud Secrets:
+    - DATABASE_URL (PostgreSQL connection string from Neon.tech)
     """)
     st.stop()
 
