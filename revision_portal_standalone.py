@@ -211,6 +211,56 @@ with st.form("revision_form"):
 
     submit_revision = st.form_submit_button("📤 Submit Revision", use_container_width=True, type="primary")
 
+# AI Assistance Section
+st.markdown("---")
+st.markdown("## 🤖 AI Drafting Assistant")
+st.caption("Need help improving your submission? Use the AI tool to generate better content.")
+
+with st.expander("🤖 Generate Improved Content", expanded=False):
+    st.markdown("### What would you like to improve?")
+
+    ai_option = st.radio(
+        "Select what to improve:",
+        ["Enhance PERTS with more detail", "Rewrite issue description", "Generate missing steps", "Improve clarity and structure"],
+        key="ai_option"
+    )
+
+    if st.button("✨ Generate with AI", key="generate_ai"):
+        with st.spinner("🤖 AI is generating improved content..."):
+            try:
+                # Import AI generator
+                import sys
+                sys.path.insert(0, os.path.dirname(__file__))
+                from dashboard.ai_kb_generator import improve_engineer_submission
+
+                # Map UI option to improvement type
+                improvement_map = {
+                    "Enhance PERTS with more detail": "enhance",
+                    "Rewrite issue description": "rewrite_issue",
+                    "Generate missing steps": "generate_missing",
+                    "Improve clarity and structure": "improve_clarity"
+                }
+
+                improvement_type = improvement_map[ai_option]
+
+                # Generate
+                ai_result = improve_engineer_submission(
+                    product=product,
+                    issue_description=revised_issue or issue_desc or "",
+                    troubleshooting_steps=revised_perts or perts or "",
+                    manager_feedback=feedback or None,
+                    improvement_type=improvement_type
+                )
+
+                st.success("✅ AI generation complete!")
+                st.markdown("**AI-Generated Improvement:**")
+                st.code(ai_result, language="markdown")
+                st.info("💡 Copy the content above and paste it into your revision form")
+
+            except Exception as e:
+                st.error(f"❌ AI generation failed: {str(e)}")
+                st.info("You can still submit your revision manually using the form above")
+
 # Handle form submission
 if submit_revision:
     if not revision_notes or not revision_notes.strip():
@@ -218,6 +268,23 @@ if submit_revision:
     else:
         try:
             is_new_kb_request = (report_type == 'no_kb_exists')
+
+            # Generate unique request_id for revision
+            # Find next available revision number
+            if is_new_kb_request:
+                cursor.execute("""
+                    SELECT COUNT(*) FROM new_kb_requests
+                    WHERE request_id LIKE %s
+                """, (f"{request_id}%",))
+                revision_count = cursor.fetchone()[0]
+                new_request_id = f"{request_id}-R{revision_count}" if revision_count > 1 else request_id
+            else:
+                cursor.execute("""
+                    SELECT COUNT(*) FROM kb_update_requests
+                    WHERE request_id LIKE %s
+                """, (f"{request_id}%",))
+                revision_count = cursor.fetchone()[0]
+                new_request_id = f"{request_id}-R{revision_count}" if revision_count > 1 else request_id
 
             if is_new_kb_request:
                 # Create revised new_kb_requests entry
@@ -228,7 +295,7 @@ if submit_revision:
                         status, priority, notes
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    request_id,
+                    new_request_id,
                     kb_title or revised_issue[:50],
                     product,
                     revised_issue,
@@ -237,7 +304,7 @@ if submit_revision:
                     datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'pending',
                     'Medium',
-                    f"[REVISION]\n{revision_notes}\n\n[ORIGINAL FEEDBACK]\n{feedback}"
+                    f"[REVISION OF {request_id}]\n{revision_notes}\n\n[ORIGINAL FEEDBACK]\n{feedback}"
                 ))
 
                 # Mark parent as superseded
@@ -255,7 +322,7 @@ if submit_revision:
                         submitted_date, status, priority, notes
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (
-                    request_id,
+                    new_request_id,
                     kb_id,
                     kb_title,
                     product,
@@ -265,7 +332,7 @@ if submit_revision:
                     datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'pending',
                     'Medium',
-                    f"[REVISION]\n{revision_notes}\n\n[ORIGINAL FEEDBACK]\n{feedback}"
+                    f"[REVISION OF {request_id}]\n{revision_notes}\n\n[ORIGINAL FEEDBACK]\n{feedback}"
                 ))
 
                 # Mark parent as superseded
@@ -280,7 +347,7 @@ if submit_revision:
 
             # Success message
             st.success("✅ Revision submitted successfully!")
-            st.info("Your revision has been submitted and will be reviewed by the KB team.")
+            st.info(f"Your revision has been submitted as **{new_request_id}** and will be reviewed by the KB team.")
             st.balloons()
 
             # Prevent resubmission
