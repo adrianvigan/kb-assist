@@ -351,16 +351,26 @@ def submit_report():
                 print(f"[DEBUG] AI decision is_approved: {ai_decision['is_approved']}", flush=True)
                 if ai_decision['is_approved']:
                     print(f"[DEBUG] APPROVED - Creating kb_update_request entry", flush=True)
+                    print(f"[DEBUG] Insert values: kb_number={kb_number}, kb_title={kb_title}, product={product}", flush=True)
+                    print(f"[DEBUG] engineer_name={engineer_name}, request_id={request_id}, report_id={report_id}", flush=True)
+
                     # ✅ APPROVED: Create kb_update_request entry
-                    cursor.execute('''
-                        INSERT INTO kb_update_requests (
-                            kb_article_id, kb_article_title,
-                            product, issue_description, new_troubleshooting,
-                            submitted_by, submitted_date, priority, status,
-                            related_report_ids, request_id, case_url, kb_audience
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'medium', 'pending', %s, %s, %s, %s)
-                    ''', (kb_number, kb_title, product, issue_desc, new_troubleshooting,
-                          engineer_name, timestamp, str(report_id), request_id, case_url, kb_audience))
+                    try:
+                        cursor.execute('''
+                            INSERT INTO kb_update_requests (
+                                kb_article_id, kb_article_title,
+                                product, issue_description, new_troubleshooting,
+                                submitted_by, submitted_date, priority, status,
+                                related_report_ids, request_id, case_url, kb_audience
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'medium', 'pending', %s, %s, %s, %s)
+                        ''', (kb_number, kb_title, product, issue_desc, new_troubleshooting,
+                              engineer_name, timestamp, str(report_id), request_id, case_url, kb_audience))
+                        print(f"[DEBUG] INSERT successful!", flush=True)
+                    except Exception as insert_error:
+                        print(f"[DEBUG] INSERT FAILED: {insert_error}", flush=True)
+                        import traceback
+                        traceback.print_exc()
+                        raise
 
                     conn.commit()
                     submission_status = "approved"
@@ -474,6 +484,12 @@ def submit_report():
         return jsonify(response_data)
         
     except Exception as e:
+        print(f"\n{'='*80}", flush=True)
+        print(f"❌ SUBMISSION ERROR:", flush=True)
+        print(f"Error: {str(e)}", flush=True)
+        print(f"{'='*80}\n", flush=True)
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "success": False,
             "error": str(e)
