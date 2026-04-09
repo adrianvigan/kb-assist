@@ -574,21 +574,23 @@ try:
                                         st.markdown("### ✅ Approve KB Update")
                                         st.caption("Provide the KB article link to notify the engineer.")
 
-                                        with st.form(key=f"approve_form_{current_row_id}"):
-                                            kb_link = st.text_input(
-                                                "KB Article Link (Required)",
-                                                value=current_kb_link,
-                                                placeholder="https://helpcenter.trendmicro.com/en-us/article/tmka-XXXXX",
-                                                key=f"approve_kb_link_{current_row_id}"
-                                            )
+                                        kb_link = st.text_input(
+                                            "KB Article Link (Required)",
+                                            value=current_kb_link,
+                                            placeholder="https://helpcenter.trendmicro.com/en-us/article/tmka-XXXXX",
+                                            key=f"approve_kb_link_{current_row_id}"
+                                        )
 
-                                            st.divider()
+                                        st.divider()
 
-                                            col1, col2 = st.columns(2)
-                                            with col1:
-                                                cancel_btn = st.form_submit_button("Cancel", use_container_width=True)
-                                            with col2:
-                                                submit_btn = st.form_submit_button("✉️ Send Approval Email", use_container_width=True, type="primary")
+                                        col1, col2 = st.columns(2)
+                                        with col1:
+                                            cancel_btn = st.button("Cancel", use_container_width=True, key=f"cancel_approve_{current_row_id}")
+                                        with col2:
+                                            submit_btn = st.button("✉️ Send Approval Email", use_container_width=True, type="primary", key=f"submit_approve_{current_row_id}")
+
+                                        if cancel_btn:
+                                            st.rerun()
 
                                         if submit_btn:
                                             if not kb_link or len(kb_link.strip()) < 10:
@@ -720,56 +722,58 @@ try:
                                             default_missing = ''
                                             default_suggestions = ''
 
-                                        with st.form(key=f"reject_form_{current_row_id}"):
-                                            # General Feedback
-                                            st.markdown("**General Feedback** (Required)")
-                                            general_feedback = st.text_area(
-                                                "Overall assessment and main concerns",
-                                                value=default_general,
-                                                height=100,
-                                                placeholder="Example: The troubleshooting steps are incomplete and need more detail...",
-                                                key=f"general_feedback_{current_row_id}",
-                                                label_visibility="collapsed"
-                                            )
+                                        # General Feedback
+                                        st.markdown("**General Feedback** (Required)")
+                                        general_feedback = st.text_area(
+                                            "Overall assessment and main concerns",
+                                            value=default_general,
+                                            height=100,
+                                            placeholder="Example: The troubleshooting steps are incomplete and need more detail...",
+                                            key=f"general_feedback_{current_row_id}",
+                                            label_visibility="collapsed"
+                                        )
 
-                                            # Technical Issues
-                                            st.markdown("**Technical Issues**")
-                                            technical_issues = st.text_area(
-                                                "Technical problems or inaccuracies",
-                                                height=80,
-                                                placeholder="Example: The root cause analysis is missing key diagnostic steps...",
-                                                key=f"technical_issues_{current_row_id}",
-                                                label_visibility="collapsed"
-                                            )
+                                        # Technical Issues
+                                        st.markdown("**Technical Issues**")
+                                        technical_issues = st.text_area(
+                                            "Technical problems or inaccuracies",
+                                            height=80,
+                                            placeholder="Example: The root cause analysis is missing key diagnostic steps...",
+                                            key=f"technical_issues_{current_row_id}",
+                                            label_visibility="collapsed"
+                                        )
 
-                                            # Missing Information
-                                            st.markdown("**Missing Information**")
-                                            missing_info = st.text_area(
-                                                "Required information that is missing",
-                                                height=80,
-                                                placeholder="Example: Please include error messages, logs, or screenshots...",
-                                                key=f"missing_info_{current_row_id}",
-                                                label_visibility="collapsed"
-                                            )
+                                        # Missing Information
+                                        st.markdown("**Missing Information**")
+                                        missing_info = st.text_area(
+                                            "Required information that is missing",
+                                            height=80,
+                                            placeholder="Example: Please include error messages, logs, or screenshots...",
+                                            key=f"missing_info_{current_row_id}",
+                                            label_visibility="collapsed"
+                                        )
 
-                                            # Improvement Suggestions
-                                            st.markdown("**Suggestions for Improvement**")
-                                            suggestions = st.text_area(
-                                                "Specific recommendations",
-                                                height=80,
-                                                placeholder="Example: Consider adding a step about checking system requirements...",
-                                                key=f"suggestions_{current_row_id}",
-                                                label_visibility="collapsed"
-                                            )
+                                        # Improvement Suggestions
+                                        st.markdown("**Suggestions for Improvement**")
+                                        suggestions = st.text_area(
+                                            "Specific recommendations",
+                                            height=80,
+                                            placeholder="Example: Consider adding a step about checking system requirements...",
+                                            key=f"suggestions_{current_row_id}",
+                                            label_visibility="collapsed"
+                                        )
 
-                                            st.divider()
+                                        st.divider()
 
-                                            col1, col2 = st.columns(2)
-                                            with col1:
-                                                cancel_btn = st.form_submit_button("Cancel", use_container_width=True)
+                                        col1, col2 = st.columns(2)
+                                        with col1:
+                                            cancel_btn = st.button("Cancel", use_container_width=True, key=f"cancel_reject_{current_row_id}")
 
-                                            with col2:
-                                                submit_btn = st.form_submit_button("✉️ Send Follow-up Email", use_container_width=True, type="primary")
+                                        with col2:
+                                            submit_btn = st.button("✉️ Send Follow-up Email", use_container_width=True, type="primary", key=f"submit_reject_{current_row_id}")
+
+                                        if cancel_btn:
+                                            st.rerun()
 
                                         if submit_btn:
                                             # Combine all feedback

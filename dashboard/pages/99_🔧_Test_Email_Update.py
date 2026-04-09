@@ -54,27 +54,38 @@ except Exception as e:
 
 st.divider()
 
-# Update REQ-000084
-st.subheader("Step 2: Fix REQ-000084 to Use Valid Report ID")
+# Update ALL requests
+st.subheader("Step 2: Fix ALL Requests to Use Valid Report ID")
 
-st.info("**Problem detected:** REQ-000084 references report ID 1, but that report doesn't exist! First report in database is ID 4.")
-st.info(f"**Solution:** Update REQ-000084 to reference report ID 4, which has email: `definitelynotvoshk@gmail.com`")
+st.info("**Problem detected:** Many requests reference report ID 1 or other IDs without emails.")
+st.info(f"**Solution:** Update ALL pending requests to reference report ID 4, which has email: `definitelynotvoshk@gmail.com`")
 
-if st.button("🔧 Fix REQ-000084 to use Report ID 4", type="primary"):
+if st.button("🔧 Fix ALL Pending Requests to use Report ID 4", type="primary"):
     try:
         conn = get_connection()
         cursor = conn.cursor()
 
+        # Update all kb_update_requests
         cursor.execute("""
             UPDATE kb_update_requests
             SET related_report_ids = '4'
-            WHERE request_id = 'REQ-000084'
+            WHERE status = 'pending' OR status = 'pending follow-up'
         """)
+        kb_update_count = cursor.rowcount
+
+        # Update all new_kb_requests
+        cursor.execute("""
+            UPDATE new_kb_requests
+            SET related_report_ids = '4'
+            WHERE status = 'pending' OR status = 'pending follow-up'
+        """)
+        new_kb_count = cursor.rowcount
 
         conn.commit()
-        st.success("✅ Updated REQ-000084 to reference report ID 4")
-        st.success("✅ Report ID 4 has email: definitelynotvoshk@gmail.com")
-        st.info("🎯 Now go to **Pending KB Updates** and test REQ-000084 - email notifications should work!")
+        st.success(f"✅ Updated {kb_update_count} KB update requests to reference report ID 4")
+        st.success(f"✅ Updated {new_kb_count} new KB requests to reference report ID 4")
+        st.success("✅ All requests now have email: definitelynotvoshk@gmail.com")
+        st.info("🎯 Now go to **Pending KB Updates** and **Pending New TS** - email notifications should work!")
         conn.close()
 
     except Exception as e:

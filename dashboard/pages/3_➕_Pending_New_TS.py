@@ -490,20 +490,22 @@ try:
                                         st.markdown("### ✅ Approve New KB Request")
                                         st.caption("Provide the KB article link to notify the engineer.")
 
-                                        with st.form(key=f"approve_new_kb_form_{current_row_id}"):
-                                            kb_link = st.text_input(
-                                                "KB Article Link (Required)",
-                                                placeholder="https://helpcenter.trendmicro.com/en-us/article/tmka-XXXXX",
-                                                key=f"approve_new_kb_link_{current_row_id}"
-                                            )
+                                        kb_link = st.text_input(
+                                            "KB Article Link (Required)",
+                                            placeholder="https://helpcenter.trendmicro.com/en-us/article/tmka-XXXXX",
+                                            key=f"approve_new_kb_link_{current_row_id}"
+                                        )
 
-                                            st.divider()
+                                        st.divider()
 
-                                            col1, col2 = st.columns(2)
-                                            with col1:
-                                                cancel_btn = st.form_submit_button("Cancel", use_container_width=True)
-                                            with col2:
-                                                submit_btn = st.form_submit_button("✉️ Send Approval Email", use_container_width=True, type="primary")
+                                        col1, col2 = st.columns(2)
+                                        with col1:
+                                            cancel_btn = st.button("Cancel", use_container_width=True, key=f"cancel_approve_new_{current_row_id}")
+                                        with col2:
+                                            submit_btn = st.button("✉️ Send Approval Email", use_container_width=True, type="primary", key=f"submit_approve_new_{current_row_id}")
+
+                                        if cancel_btn:
+                                            st.rerun()
 
                                         if submit_btn:
                                             if not kb_link or len(kb_link.strip()) < 10:
@@ -638,51 +640,53 @@ try:
                                         st.markdown("---")
                                         st.caption(f"📧 Engineer will be notified: {engineer_email or 'Unknown'}")
 
-                                        with st.form(key=f"reject_form_{current_row_id}"):
-                                            # Structured feedback fields
-                                            st.markdown("**General Feedback** (Required)")
-                                            general_feedback = st.text_area(
-                                                "Overall assessment and main concerns",
-                                                height=100,
-                                                placeholder="Example: The troubleshooting steps need more detail and structure...",
-                                                key=f"general_feedback_{current_row_id}",
-                                                label_visibility="collapsed"
-                                            )
+                                        # Structured feedback fields
+                                        st.markdown("**General Feedback** (Required)")
+                                        general_feedback = st.text_area(
+                                            "Overall assessment and main concerns",
+                                            height=100,
+                                            placeholder="Example: The troubleshooting steps need more detail and structure...",
+                                            key=f"general_feedback_{current_row_id}",
+                                            label_visibility="collapsed"
+                                        )
 
-                                            st.markdown("**Technical Issues**")
-                                            technical_issues = st.text_area(
-                                                "Specific technical problems or inaccuracies",
-                                                height=80,
-                                                placeholder="Example: Missing root cause analysis, unclear error handling...",
-                                                key=f"technical_issues_{current_row_id}",
-                                                label_visibility="collapsed"
-                                            )
+                                        st.markdown("**Technical Issues**")
+                                        technical_issues = st.text_area(
+                                            "Specific technical problems or inaccuracies",
+                                            height=80,
+                                            placeholder="Example: Missing root cause analysis, unclear error handling...",
+                                            key=f"technical_issues_{current_row_id}",
+                                            label_visibility="collapsed"
+                                        )
 
-                                            st.markdown("**Missing Information**")
-                                            missing_info = st.text_area(
-                                                "What information is missing",
-                                                height=80,
-                                                placeholder="Example: Need error messages, screenshots, version details...",
-                                                key=f"missing_info_{current_row_id}",
-                                                label_visibility="collapsed"
-                                            )
+                                        st.markdown("**Missing Information**")
+                                        missing_info = st.text_area(
+                                            "What information is missing",
+                                            height=80,
+                                            placeholder="Example: Need error messages, screenshots, version details...",
+                                            key=f"missing_info_{current_row_id}",
+                                            label_visibility="collapsed"
+                                        )
 
-                                            st.markdown("**Suggestions for Improvement**")
-                                            suggestions = st.text_area(
-                                                "How to improve the submission",
-                                                height=80,
-                                                placeholder="Example: Add step-by-step instructions, include prerequisites...",
-                                                key=f"suggestions_{current_row_id}",
-                                                label_visibility="collapsed"
-                                            )
+                                        st.markdown("**Suggestions for Improvement**")
+                                        suggestions = st.text_area(
+                                            "How to improve the submission",
+                                            height=80,
+                                            placeholder="Example: Add step-by-step instructions, include prerequisites...",
+                                            key=f"suggestions_{current_row_id}",
+                                            label_visibility="collapsed"
+                                        )
 
-                                            st.markdown("---")
+                                        st.markdown("---")
 
-                                            col1, col2 = st.columns(2)
-                                            with col1:
-                                                cancel_btn = st.form_submit_button("Cancel", use_container_width=True)
-                                            with col2:
-                                                submit_reject = st.form_submit_button("✉️ Send Follow-up Email", use_container_width=True, type="primary")
+                                        col1, col2 = st.columns(2)
+                                        with col1:
+                                            cancel_btn = st.button("Cancel", use_container_width=True, key=f"cancel_reject_new_{current_row_id}")
+                                        with col2:
+                                            submit_reject = st.button("✉️ Send Follow-up Email", use_container_width=True, type="primary", key=f"submit_reject_new_{current_row_id}")
+
+                                        if cancel_btn:
+                                            st.rerun()
 
                                         if submit_reject:
                                             if not general_feedback or not general_feedback.strip():
