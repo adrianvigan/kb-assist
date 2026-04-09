@@ -838,7 +838,6 @@ try:
                                                         base_url = os.getenv('BASE_URL', 'http://localhost:8501')
                                                         # For Streamlit Cloud, secrets override env
                                                         try:
-                                                            import streamlit as st
                                                             if hasattr(st, 'secrets') and 'BASE_URL' in st.secrets:
                                                                 base_url = st.secrets['BASE_URL']
                                                         except:
