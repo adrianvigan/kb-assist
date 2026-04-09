@@ -731,16 +731,15 @@ try:
                                                     from utils.email_sender import send_rejection_email
 
                                                     revision_token = generate_token(current_request_id, 'revision')
-                                                    # Link to revision portal (use production URL from env/secrets)
-                                                    base_url = os.getenv('BASE_URL', 'http://localhost:8501')
+                                                    # Link to SEPARATE revision portal app (engineers-only app)
+                                                    revision_portal_url = os.getenv('REVISION_PORTAL_URL', 'http://localhost:8502')
                                                     # For Streamlit Cloud, secrets override env
                                                     try:
-                                                        if hasattr(st, 'secrets') and 'BASE_URL' in st.secrets:
-                                                            base_url = st.secrets['BASE_URL']
+                                                        if hasattr(st, 'secrets') and 'REVISION_PORTAL_URL' in st.secrets:
+                                                            revision_portal_url = st.secrets['REVISION_PORTAL_URL']
                                                     except:
                                                         pass
-                                                    # Revision portal page URL (Streamlit strips emojis and numbers from page names)
-                                                    revision_link = f"{base_url}/Revision_Portal?token={revision_token}"
+                                                    revision_link = f"{revision_portal_url}?token={revision_token}"
 
                                                     with st.spinner("📧 Sending follow-up email..."):
                                                         email_result = send_rejection_email(
