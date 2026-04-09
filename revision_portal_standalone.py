@@ -52,11 +52,8 @@ try:
     parts = token.split('_')
     if len(parts) >= 2 and parts[0] == 'revision':
         target_request_id = parts[1]
-        st.info(f"🔍 DEBUG: Looking for request_id: {target_request_id}")
     else:
         st.error("❌ Invalid token format")
-        st.code(f"Token: {token}")
-        st.code(f"Parts: {parts}")
         st.stop()
 except Exception as e:
     st.error(f"❌ Invalid revision token: {str(e)}")
@@ -65,31 +62,6 @@ except Exception as e:
 # Look up request by request_id
 conn = get_connection()
 cursor = conn.cursor()
-
-# First, check if request exists at all (for debugging)
-cursor.execute("""
-    SELECT request_id, status
-    FROM kb_update_requests
-    WHERE request_id = %s
-    ORDER BY id DESC
-    LIMIT 1
-""", (target_request_id,))
-debug_result = cursor.fetchone()
-
-if debug_result:
-    st.info(f"🔍 DEBUG: Found request with status: {debug_result[1]}")
-else:
-    st.warning("🔍 DEBUG: Request not found in kb_update_requests, checking new_kb_requests...")
-    cursor.execute("""
-        SELECT request_id, status
-        FROM new_kb_requests
-        WHERE request_id = %s
-        ORDER BY id DESC
-        LIMIT 1
-    """, (target_request_id,))
-    debug_result2 = cursor.fetchone()
-    if debug_result2:
-        st.info(f"🔍 DEBUG: Found request in new_kb_requests with status: {debug_result2[1]}")
 
 # Try kb_update_requests first
 cursor.execute("""
@@ -147,9 +119,21 @@ if not result:
     result = cursor.fetchone()
 
 if not result:
-    st.error("❌ Request not found or revision link has expired")
-    st.info("This request may have already been revised or approved. Please contact your KB manager if you believe this is an error.")
-    st.caption("Expected status: 'pending follow-up' or 'rejected'")
+    # Request not found with valid status - likely already submitted
+    st.markdown("""
+    <div style="background-color: #d4edda; padding: 20px; border-left: 4px solid #28a745; border-radius: 5px; margin-top: 20px;">
+        <h2 style="color: #155724; margin-top: 0;">✅ Already Submitted!</h2>
+        <p style="color: #155724; margin: 10px 0;">This revision link has already been used. Your revision has been submitted and is being reviewed by the KB team.</p>
+        <hr style="border-color: #c3e6cb;">
+        <h4 style="color: #155724;">What's Next?</h4>
+        <ul style="color: #155724;">
+            <li>Your revision is currently under review</li>
+            <li>The KB team will review your updated submission</li>
+            <li>You'll receive an email when they approve or provide additional feedback</li>
+        </ul>
+        <p style="color: #155724; margin: 20px 0 0 0;"><strong>You can close this page. Thank you!</strong></p>
+    </div>
+    """, unsafe_allow_html=True)
     conn.close()
     st.stop()
 
@@ -347,12 +331,22 @@ if submit_revision:
             conn.commit()
             conn.close()
 
-            # Success message
-            st.success("✅ Revision submitted successfully!")
-            st.info(f"Your revision has been submitted as **{new_request_id}** and will be reviewed by the KB team.")
+            # Show success screen (prevent resubmission)
+            st.markdown("""
+            <div style="background-color: #d4edda; padding: 20px; border-left: 4px solid #28a745; border-radius: 5px; margin-top: 20px;">
+                <h2 style="color: #155724; margin-top: 0;">✅ Revision Submitted Successfully!</h2>
+                <p style="color: #155724; margin: 10px 0;">Your revision has been submitted and is being reviewed by the KB team.</p>
+                <hr style="border-color: #c3e6cb;">
+                <h4 style="color: #155724;">What's Next?</h4>
+                <ul style="color: #155724;">
+                    <li>Your revision is currently under review</li>
+                    <li>The KB team will review your updated submission</li>
+                    <li>You'll receive an email when they approve or provide additional feedback</li>
+                </ul>
+                <p style="color: #155724; margin: 20px 0 0 0;"><strong>You can close this page. Thank you!</strong></p>
+            </div>
+            """, unsafe_allow_html=True)
             st.balloons()
-
-            # Prevent resubmission
             st.stop()
 
         except Exception as e:
