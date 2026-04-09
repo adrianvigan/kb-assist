@@ -234,17 +234,20 @@ try:
                             st.caption("⬆️ Engineer's first-hand explanation of the fix")
 
                         # Display Engineer's Response (if this is a revision)
-                        if pd.notna(row['notes']) and '[ENGINEER REVISION NOTES]' in str(row['notes']):
+                        if pd.notna(row['notes']) and '[REVISION OF' in str(row['notes']):
                             notes = row['notes']
                             engineer_revision_notes = None
 
-                            parts = notes.split('[ENGINEER REVISION NOTES]')
-                            if len(parts) > 1:
-                                revision_notes_section = parts[1]
-                                if '[ORIGINAL MANAGER FEEDBACK]' in revision_notes_section:
-                                    engineer_revision_notes = revision_notes_section.split('[ORIGINAL MANAGER FEEDBACK]')[0].strip()
-                                else:
-                                    engineer_revision_notes = revision_notes_section.strip()
+                            # Extract revision notes - format: [REVISION OF REQ-XXX]\n{notes}\n\n[ORIGINAL FEEDBACK]\n{feedback}
+                            if '[REVISION OF' in notes and '[ORIGINAL FEEDBACK]' in notes:
+                                # Get content between [REVISION OF...] line and [ORIGINAL FEEDBACK]
+                                parts = notes.split('\n', 1)  # Split after first line
+                                if len(parts) > 1:
+                                    remaining = parts[1]  # Everything after [REVISION OF...]
+                                    if '[ORIGINAL FEEDBACK]' in remaining:
+                                        engineer_revision_notes = remaining.split('[ORIGINAL FEEDBACK]')[0].strip()
+                                    else:
+                                        engineer_revision_notes = remaining.strip()
 
                             if engineer_revision_notes:
                                 st.markdown("**✏️ Engineer's Response:**")
@@ -332,21 +335,19 @@ try:
 
                                     # Extract engineer revision notes
                                     engineer_revision_notes = None
-                                    if '[ENGINEER REVISION NOTES]' in notes:
-                                        parts = notes.split('[ENGINEER REVISION NOTES]')
+                                    if '[REVISION OF' in notes and '[ORIGINAL FEEDBACK]' in notes:
+                                        parts = notes.split('\n', 1)
                                         if len(parts) > 1:
-                                            revision_notes_section = parts[1]
-                                            if '[ORIGINAL MANAGER FEEDBACK]' in revision_notes_section:
-                                                engineer_revision_notes = revision_notes_section.split('[ORIGINAL MANAGER FEEDBACK]')[0].strip()
-                                            else:
-                                                engineer_revision_notes = revision_notes_section.strip()
+                                            remaining = parts[1]
+                                            if '[ORIGINAL FEEDBACK]' in remaining:
+                                                engineer_revision_notes = remaining.split('[ORIGINAL FEEDBACK]')[0].strip()
 
                                     # Show engineer revision notes if available
                                     if engineer_revision_notes:
-                                        st.markdown("**📝 Engineer's Revision Notes:**")
+                                        st.markdown("**✏️ Engineer's Revision Notes:**")
                                         st.markdown(f"""
-                                        <div style="background-color: #e3f2fd; padding: 15px; border-left: 4px solid #2196f3; border-radius: 5px; margin: 10px 0;">
-                                            <p style="margin: 0; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">{engineer_revision_notes}</p>
+                                        <div style="background-color: #d4edda; padding: 15px; border-left: 4px solid #28a745; border-radius: 5px; margin: 10px 0;">
+                                            <div style="color: #000000; white-space: pre-wrap; font-family: Arial, sans-serif; margin: 0; font-size: 12px;">{engineer_revision_notes}</div>
                                         </div>
                                         """, unsafe_allow_html=True)
 
@@ -361,8 +362,8 @@ try:
 
                                     # Extract manager feedback
                                     feedback_text = None
-                                    if '[ORIGINAL MANAGER FEEDBACK]' in notes:
-                                        feedback_text = notes.split('[ORIGINAL MANAGER FEEDBACK]')[1].strip()
+                                    if '[REVISION OF' in notes and '[ORIGINAL FEEDBACK]' in notes:
+                                        feedback_text = notes.split('[ORIGINAL FEEDBACK]', 1)[1].strip()
                                     elif 'GENERAL FEEDBACK:' in notes or 'TECHNICAL ISSUES:' in notes:
                                         feedback_text = notes
 
@@ -370,7 +371,7 @@ try:
                                         st.markdown("**📝 Manager's Feedback:**")
                                         st.markdown(f"""
                                         <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; border-radius: 5px; margin: 10px 0;">
-                                            <pre style="white-space: pre-wrap; font-family: Arial, sans-serif; margin: 0; font-size: 12px;">{feedback_text}</pre>
+                                            <div style="color: #000000; white-space: pre-wrap; font-family: Arial, sans-serif; margin: 0; font-size: 12px;">{feedback_text}</div>
                                         </div>
                                         """, unsafe_allow_html=True)
 
@@ -454,10 +455,28 @@ try:
                         if pd.notna(row.get('reviewed_date')):
                             st.write(f"**Reviewed:** {pd.to_datetime(row['reviewed_date'], format='ISO8601').strftime('%Y-%m-%d %H:%M')}")
 
-                    # Notes removed from sidebar - engineer notes now shown in main content after Solution
-                    # if pd.notna(row['notes']):
-                    #     st.markdown("**📌 Notes:**")
-                    #     st.caption(row['notes'])
+                    # Manager's Feedback section (if available) - shown in sidebar
+                    if pd.notna(row['notes']) and row['notes'].strip():
+                        notes = row['notes']
+                        feedback_text = None
+
+                        # Extract manager feedback based on format
+                        if '[REVISION OF' in notes and '[ORIGINAL FEEDBACK]' in notes:
+                            # This is a revision - extract feedback after [ORIGINAL FEEDBACK]
+                            feedback_text = notes.split('[ORIGINAL FEEDBACK]', 1)[1].strip()
+                        elif 'GENERAL FEEDBACK:' in notes or 'TECHNICAL ISSUES:' in notes:
+                            # This is a direct feedback note
+                            feedback_text = notes
+
+                        # Display manager feedback in yellow box if available
+                        if feedback_text and ('GENERAL FEEDBACK:' in feedback_text or 'TECHNICAL ISSUES:' in feedback_text):
+                            st.markdown("---")
+                            st.markdown("**📝 Manager's Feedback:**")
+                            st.markdown(f"""
+                            <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; border-radius: 5px; margin: 10px 0;">
+                                <div style="color: #000000; white-space: pre-wrap; font-family: Arial, sans-serif; margin: 0; font-size: 12px;">{feedback_text}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
 
                     # Action buttons
                     if row['status'] == 'pending':
@@ -940,29 +959,6 @@ try:
                                 st.rerun()
                             else:
                                 st.error("Please enter KB Article ID")
-
-                    # Manager's Feedback section (if available)
-                    if pd.notna(row['notes']) and row['notes'].strip():
-                        st.markdown("---")
-                        notes = row['notes']
-
-                        # Extract manager feedback
-                        feedback_text = None
-
-                        # Check for revision format with engineer notes
-                        if '[ORIGINAL MANAGER FEEDBACK]' in notes:
-                            feedback_text = notes.split('[ORIGINAL MANAGER FEEDBACK]')[1].strip()
-                        elif 'GENERAL FEEDBACK:' in notes or 'TECHNICAL ISSUES:' in notes:
-                            feedback_text = notes
-
-                        # Display manager feedback in yellow box if available
-                        if feedback_text and ('GENERAL FEEDBACK:' in feedback_text or 'TECHNICAL ISSUES:' in feedback_text):
-                            st.markdown("**📝 Manager's Feedback:**")
-                            st.markdown(f"""
-                            <div style="background-color: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; border-radius: 5px; margin: 10px 0;">
-                                <div style="color: #000000; white-space: pre-wrap; font-family: Arial, sans-serif; margin: 0; font-size: 12px;">{feedback_text}</div>
-                            </div>
-                            """, unsafe_allow_html=True)
 
                     # Notes section (for admin/manager use - editable)
                     st.markdown("---")
