@@ -142,7 +142,6 @@ try:
           AND nkr.request_id NOT IN (
               SELECT request_id FROM new_kb_requests WHERE status = 'approved'
           )
-          AND er.engineer_email IS NOT NULL
         ORDER BY
             nkr.frequency_count DESC,
             CASE nkr.priority

@@ -88,7 +88,7 @@ try:
         if status_new != "All":
             filters_new.append(f"status = '{status_new}'")
         else:
-            filters_new.append("status IN ('approved', 'rejected', 'completed')")
+            filters_new.append("status IN ('approved', 'rejected', 'completed', 'closed', 'superseded')")
 
         if selected_product_new != 'All Products':
             filters_new.append(f"product = '{selected_product_new}'")
@@ -236,7 +236,7 @@ try:
         if status_update != "All":
             filters_update.append(f"status = '{status_update}'")
         else:
-            filters_update.append("status IN ('approved', 'rejected', 'implemented')")
+            filters_update.append("status IN ('approved', 'rejected', 'implemented', 'closed', 'superseded')")
 
         if selected_product_update != 'All Products':
             filters_update.append(f"product = '{selected_product_update}'")

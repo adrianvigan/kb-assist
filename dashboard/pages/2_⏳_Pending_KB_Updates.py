@@ -134,7 +134,6 @@ try:
           AND kbu.request_id NOT IN (
               SELECT request_id FROM kb_update_requests WHERE status = 'approved'
           )
-          AND er.engineer_email IS NOT NULL
         ORDER BY
             CASE kbu.priority
                 WHEN 'high' THEN 1
