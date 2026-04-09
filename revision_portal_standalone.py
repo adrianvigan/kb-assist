@@ -7,10 +7,26 @@ import streamlit as st
 import os
 import sys
 from datetime import datetime
+import psycopg2
 
-# Add database path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'dashboard', 'database'))
-from azure_db import get_connection
+def get_connection():
+    """Get database connection - read fresh from secrets"""
+    try:
+        # Get DATABASE_URL from Streamlit secrets
+        if hasattr(st, 'secrets') and 'DATABASE_URL' in st.secrets:
+            DATABASE_URL = st.secrets['DATABASE_URL']
+        else:
+            st.error("❌ DATABASE_URL not found in secrets!")
+            st.info("Please add DATABASE_URL to your Streamlit Cloud app secrets.")
+            st.stop()
+
+        # Connect to database
+        conn = psycopg2.connect(DATABASE_URL)
+        return conn
+    except Exception as e:
+        st.error(f"❌ Database connection failed: {str(e)}")
+        st.info("Please check your DATABASE_URL secret in Streamlit Cloud settings.")
+        st.stop()
 
 st.set_page_config(
     page_title="Revise KB Request",
