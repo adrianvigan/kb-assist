@@ -9,18 +9,23 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Try to import streamlit for secrets (Streamlit Cloud)
-try:
-    import streamlit as st
-    # Check if we're actually running in Streamlit Cloud (secrets available)
-    if hasattr(st, 'secrets') and len(st.secrets) > 0:
-        DATABASE_URL = st.secrets.get('DATABASE_URL', os.getenv('DATABASE_URL'))
-    else:
-        # Streamlit imported but no secrets - use environment variables
-        DATABASE_URL = os.getenv('DATABASE_URL')
-except (ImportError, Exception):
-    # Fall back to environment variables (local development)
-    DATABASE_URL = os.getenv('DATABASE_URL')
+def get_database_url():
+    """
+    Get DATABASE_URL from secrets or environment variables
+    Reads fresh on each call to ensure secrets are available
+    """
+    # Try to import streamlit for secrets (Streamlit Cloud)
+    try:
+        import streamlit as st
+        # Check if we're actually running in Streamlit Cloud (secrets available)
+        if hasattr(st, 'secrets') and len(st.secrets) > 0:
+            return st.secrets.get('DATABASE_URL', os.getenv('DATABASE_URL'))
+        else:
+            # Streamlit imported but no secrets - use environment variables
+            return os.getenv('DATABASE_URL')
+    except (ImportError, Exception):
+        # Fall back to environment variables (local development)
+        return os.getenv('DATABASE_URL')
 
 def get_connection():
     """
@@ -28,6 +33,9 @@ def get_connection():
     Returns: psycopg2.Connection object
     """
     try:
+        DATABASE_URL = get_database_url()
+        if not DATABASE_URL:
+            raise ValueError("DATABASE_URL not found in secrets or environment variables")
         conn = psycopg2.connect(DATABASE_URL)
         return conn
     except psycopg2.Error as e:
