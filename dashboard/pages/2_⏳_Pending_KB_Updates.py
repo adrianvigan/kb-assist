@@ -182,6 +182,15 @@ try:
 
                 with col1:
                     # Section 1: Current KB Article
+                    # Create default kb dict for AI generation
+                    kb = {
+                        'content': f"KB Article {row['kb_article_id']}: {row['kb_article_title']}\n\nContent not available in database.",
+                        'title': row['kb_article_title'],
+                        'kb_number': row['kb_article_id'],
+                        'product': row['product'],
+                        'url': f"https://success.trendmicro.com/dcx/s/solution/000{row['kb_article_id']}?language=en_US"
+                    }
+
                     if pd.notna(row['kb_article_id']):
                         st.markdown("### 📄 Current KB Article")
 
