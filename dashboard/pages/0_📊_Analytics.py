@@ -78,9 +78,9 @@ approval_rate = (approved_count / total_submissions * 100) if total_submissions 
 
 # Avg Response Time (days)
 avg_response_df = pd.read_sql_query(f"""
-    SELECT AVG(JULIANDAY(reviewed_date) - JULIANDAY(created_at)) as avg_days
+    SELECT AVG(EXTRACT(EPOCH FROM (reviewed_date - created_at))/86400) as avg_days
     FROM engineer_reports
-    WHERE reviewed_date IS NOT NULL AND DATE(created_at) >= '{date_filter}'
+    WHERE reviewed_date IS NOT NULL AND created_at >= '{date_filter}'
 """, conn)
 avg_response_time = avg_response_df.iloc[0]['avg_days'] or 0
 
