@@ -93,11 +93,11 @@ try:
         if selected_product_new != 'All Products':
             filters_new.append(f"product = '{selected_product_new}'")
 
-        # Date filter
+        # Date filter (PostgreSQL syntax)
         date_filters = {
-            "Last 7 Days": "date(submitted_date) >= date('now', '-7 days')",
-            "Last 30 Days": "date(submitted_date) >= date('now', '-30 days')",
-            "Last 90 Days": "date(submitted_date) >= date('now', '-90 days')",
+            "Last 7 Days": "submitted_date >= CURRENT_DATE - INTERVAL '7 days'",
+            "Last 30 Days": "submitted_date >= CURRENT_DATE - INTERVAL '30 days'",
+            "Last 90 Days": "submitted_date >= CURRENT_DATE - INTERVAL '90 days'",
             "All Time": "1=1"
         }
         filters_new.append(date_filters[date_range_new])

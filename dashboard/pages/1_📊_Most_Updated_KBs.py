@@ -37,11 +37,11 @@ try:
             ["Last 7 Days", "Last 30 Days", "Last 90 Days", "All Time"]
         )
 
-    # Calculate date filter
+    # Calculate date filter (PostgreSQL syntax)
     date_filters = {
-        "Last 7 Days": "date(created_at) >= date('now', '-7 days')",
-        "Last 30 Days": "date(created_at) >= date('now', '-30 days')",
-        "Last 90 Days": "date(created_at) >= date('now', '-90 days')",
+        "Last 7 Days": "created_at >= CURRENT_DATE - INTERVAL '7 days'",
+        "Last 30 Days": "created_at >= CURRENT_DATE - INTERVAL '30 days'",
+        "Last 90 Days": "created_at >= CURRENT_DATE - INTERVAL '90 days'",
         "All Time": "1=1"
     }
     date_filter = date_filters[time_range]
@@ -130,7 +130,7 @@ try:
             SUM(CASE WHEN report_type = 'no_kb_exists' THEN 1 ELSE 0 END) as new_kb_requests,
             SUM(CASE WHEN report_type = 'kb_update_request' THEN 1 ELSE 0 END) as update_requests
         FROM engineer_reports
-        WHERE date(created_at) >= date('now', '-30 days')
+        WHERE created_at >= CURRENT_DATE - INTERVAL '30 days'
         GROUP BY DATE(created_at)
         ORDER BY date DESC
     """, conn)
