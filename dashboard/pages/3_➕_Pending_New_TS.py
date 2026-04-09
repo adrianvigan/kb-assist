@@ -653,67 +653,54 @@ try:
                                         st.markdown("---")
                                         st.caption(f"📧 Engineer will be notified: {engineer_email or 'Unknown'}")
 
-                                        # Get values from session state if they exist
-                                        if f"general_feedback_new_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"general_feedback_new_{current_row_id}"] = ""
-                                        if f"technical_issues_new_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"technical_issues_new_{current_row_id}"] = ""
-                                        if f"missing_info_new_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"missing_info_new_{current_row_id}"] = ""
-                                        if f"suggestions_new_{current_row_id}" not in st.session_state:
-                                            st.session_state[f"suggestions_new_{current_row_id}"] = ""
+                                        # Use unique keys that don't reset
+                                        feedback_key = f"feedback_new_{current_row_id}"
 
                                         # Structured feedback fields
                                         st.markdown("**General Feedback** (Required)")
-                                        st.text_area(
+                                        general_feedback = st.text_area(
                                             "Overall assessment and main concerns",
                                             height=100,
                                             placeholder="Example: The troubleshooting steps need more detail and structure...",
-                                            key=f"general_feedback_new_{current_row_id}",
+                                            key=f"{feedback_key}_general",
                                             label_visibility="collapsed"
                                         )
 
                                         st.markdown("**Technical Issues**")
-                                        st.text_area(
+                                        technical_issues = st.text_area(
                                             "Specific technical problems or inaccuracies",
                                             height=80,
                                             placeholder="Example: Missing root cause analysis, unclear error handling...",
-                                            key=f"technical_issues_new_{current_row_id}",
+                                            key=f"{feedback_key}_technical",
                                             label_visibility="collapsed"
                                         )
 
                                         st.markdown("**Missing Information**")
-                                        st.text_area(
+                                        missing_info = st.text_area(
                                             "What information is missing",
                                             height=80,
                                             placeholder="Example: Need error messages, screenshots, version details...",
-                                            key=f"missing_info_new_{current_row_id}",
+                                            key=f"{feedback_key}_missing",
                                             label_visibility="collapsed"
                                         )
 
                                         st.markdown("**Suggestions for Improvement**")
-                                        st.text_area(
+                                        suggestions = st.text_area(
                                             "How to improve the submission",
                                             height=80,
                                             placeholder="Example: Add step-by-step instructions, include prerequisites...",
-                                            key=f"suggestions_new_{current_row_id}",
+                                            key=f"{feedback_key}_suggestions",
                                             label_visibility="collapsed"
                                         )
-
-                                        # Read values from session state
-                                        general_feedback = st.session_state[f"general_feedback_new_{current_row_id}"]
-                                        technical_issues = st.session_state[f"technical_issues_new_{current_row_id}"]
-                                        missing_info = st.session_state[f"missing_info_new_{current_row_id}"]
-                                        suggestions = st.session_state[f"suggestions_new_{current_row_id}"]
 
                                         st.markdown("---")
 
                                         col1, col2 = st.columns(2)
                                         with col1:
                                             if st.button("Cancel", use_container_width=True, key=f"cancel_reject_new_{current_row_id}"):
-                                                # Clear session state
-                                                for key in [f"general_feedback_new_{current_row_id}", f"technical_issues_new_{current_row_id}",
-                                                           f"missing_info_new_{current_row_id}", f"suggestions_new_{current_row_id}"]:
+                                                # Clear session state with new keys
+                                                for suffix in ["_general", "_technical", "_missing", "_suggestions"]:
+                                                    key = f"{feedback_key}{suffix}"
                                                     if key in st.session_state:
                                                         del st.session_state[key]
                                                 st.rerun()
@@ -786,9 +773,10 @@ try:
                                                         st.info(f"📋 Status updated to: **Pending Follow-up**")
                                                         st.balloons()
 
-                                                        # Clear session state
-                                                        for key in [f"general_feedback_new_{current_row_id}", f"technical_issues_new_{current_row_id}",
-                                                                   f"missing_info_new_{current_row_id}", f"suggestions_new_{current_row_id}"]:
+                                                        # Clear session state with new keys
+                                                        feedback_key_clear = f"feedback_new_{current_row_id}"
+                                                        for suffix in ["_general", "_technical", "_missing", "_suggestions"]:
+                                                            key = f"{feedback_key_clear}{suffix}"
                                                             if key in st.session_state:
                                                                 del st.session_state[key]
 
