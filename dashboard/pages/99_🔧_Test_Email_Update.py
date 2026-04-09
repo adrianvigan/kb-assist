@@ -18,7 +18,7 @@ try:
     # Check engineer reports
     st.write("**Checking engineer reports...**")
     cursor.execute("""
-        SELECT id, engineer_email, product, issue_description
+        SELECT id, engineer_email, product, report_type, engineer_name
         FROM engineer_reports
         LIMIT 10
     """)
@@ -26,7 +26,8 @@ try:
 
     st.write(f"Total reports found: {len(all_reports)}")
     for report in all_reports:
-        st.write(f"- ID: {report[0]}, Email: `{report[1]}`, Product: {report[2]}")
+        email_display = f"`{report[1]}`" if report[1] else "❌ **None**"
+        st.write(f"- ID: {report[0]}, Email: {email_display}, Product: {report[2]}, Type: {report[3]}, Engineer: {report[4]}")
 
     # Check REQ-000084
     st.write("\n**Checking REQ-000084...**")
