@@ -9,11 +9,20 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Azure SQL connection details
-SERVER = os.getenv('AZURE_SQL_SERVER')
-DATABASE = os.getenv('AZURE_SQL_DATABASE')
-USERNAME = os.getenv('AZURE_SQL_USERNAME')
-PASSWORD = os.getenv('AZURE_SQL_PASSWORD')
+# Try to import streamlit for secrets (Streamlit Cloud)
+try:
+    import streamlit as st
+    # Use Streamlit secrets if available (Streamlit Cloud)
+    SERVER = st.secrets.get('AZURE_SQL_SERVER', os.getenv('AZURE_SQL_SERVER'))
+    DATABASE = st.secrets.get('AZURE_SQL_DATABASE', os.getenv('AZURE_SQL_DATABASE'))
+    USERNAME = st.secrets.get('AZURE_SQL_USERNAME', os.getenv('AZURE_SQL_USERNAME'))
+    PASSWORD = st.secrets.get('AZURE_SQL_PASSWORD', os.getenv('AZURE_SQL_PASSWORD'))
+except ImportError:
+    # Fall back to environment variables (local development)
+    SERVER = os.getenv('AZURE_SQL_SERVER')
+    DATABASE = os.getenv('AZURE_SQL_DATABASE')
+    USERNAME = os.getenv('AZURE_SQL_USERNAME')
+    PASSWORD = os.getenv('AZURE_SQL_PASSWORD')
 
 def get_connection():
     """
