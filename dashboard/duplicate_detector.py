@@ -2,13 +2,17 @@
 Duplicate Detection AI
 Uses similarity matching to detect potential duplicate submissions
 """
-import sqlite3
+import sys
 import os
 from difflib import SequenceMatcher
 from datetime import datetime, timedelta
 import re
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', 'database', 'kb_assist.db')
+# Add database directory to path
+db_path = os.path.join(os.path.dirname(__file__), 'database')
+sys.path.insert(0, db_path)
+
+from azure_db import get_connection
 
 
 def normalize_text(text):
@@ -71,7 +75,7 @@ def find_duplicates(
     Returns:
         List of potential duplicate submissions with similarity scores
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
 
     # Calculate date threshold
@@ -91,15 +95,15 @@ def find_duplicates(
             engineer_name,
             created_at
         FROM engineer_reports
-        WHERE DATE(created_at) >= ?
-        AND product = ?
+        WHERE DATE(created_at) >= %s
+        AND product = %s
     """
 
     params = [date_threshold, product]
 
     # Add report type filter if specified
     if report_type:
-        query += " AND report_type = ?"
+        query += " AND report_type = %s"
         params.append(report_type)
 
     # Execute query
@@ -182,7 +186,7 @@ def check_for_duplicates_before_approval(report_id):
     Returns:
         Dict with duplicate detection results
     """
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection()
     cursor = conn.cursor()
 
     # Get report details
@@ -191,7 +195,7 @@ def check_for_duplicates_before_approval(report_id):
             product, case_number, case_title, new_troubleshooting,
             kb_article_link, report_type
         FROM engineer_reports
-        WHERE id = ?
+        WHERE id = %s
     """, (report_id,))
 
     report = cursor.fetchone()

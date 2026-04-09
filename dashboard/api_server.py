@@ -15,22 +15,26 @@ print("="*80, flush=True)
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import sqlite3
+import psycopg2
 from datetime import datetime
 import threading
 import re
 
-# Add utils to path for request ID generation and email
+# Add database and utils to path
+db_path = os.path.join(os.path.dirname(__file__), 'database')
 utils_path = os.path.join(os.path.dirname(__file__), 'utils')
+print(f"Adding database path: {db_path}", flush=True)
 print(f"Adding utils path: {utils_path}", flush=True)
-sys.path.append(utils_path)
+sys.path.insert(0, db_path)
+sys.path.insert(0, utils_path)
 
 try:
+    from azure_db import get_connection
     from request_id_generator_sqlite import generate_request_id
     from email_sender import send_submission_confirmation_email, send_ai_auto_rejection_email
-    print("✅ Successfully imported utils modules", flush=True)
+    print("✅ Successfully imported database and utils modules", flush=True)
 except Exception as e:
-    print(f"❌ ERROR importing utils: {e}", flush=True)
+    print(f"❌ ERROR importing modules: {e}", flush=True)
     import traceback
     traceback.print_exc()
 
@@ -47,9 +51,6 @@ CORS(app,
      }},
      send_wildcard=True,
      always_send=True)
-
-# Database path
-DB_PATH = os.path.join(os.path.dirname(__file__), 'database', 'kb_assist.db')
 
 
 def extract_kb_number_from_url(kb_url):
@@ -68,9 +69,9 @@ def get_kb_title_from_db(kb_number):
     if not kb_number:
         return None
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute('SELECT title FROM kb_articles WHERE kb_number = ?', (kb_number,))
+        cursor.execute('SELECT title FROM kb_articles WHERE kb_number = %s', (kb_number,))
         result = cursor.fetchone()
         conn.close()
         return result[0] if result else None
@@ -220,11 +221,13 @@ def submit_report():
             what_failed = new_troubleshooting
         
         # Connect to database
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_connection()
         cursor = conn.cursor()
 
-        # Generate request ID
-        request_id = generate_request_id(conn)
+        # Generate request ID (simple sequential for now)
+        cursor.execute("SELECT COUNT(*) FROM engineer_reports")
+        count = cursor.fetchone()[0]
+        request_id = f"REQ-{str(count + 1).zfill(6)}"
 
         # Insert into engineer_reports table
         cursor.execute('''
@@ -252,7 +255,7 @@ def submit_report():
                 request_id,
                 created_at,
                 updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?)
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'pending', %s, %s, %s)
         ''', (
             timestamp,
             case_number,
@@ -349,7 +352,7 @@ def submit_report():
                             product, issue_description, new_troubleshooting,
                             submitted_by, submitted_date, priority, status,
                             related_report_ids, request_id, case_url, kb_audience
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'medium', 'pending', ?, ?, ?, ?)
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, 'medium', 'pending', %s, %s, %s, %s)
                     ''', (kb_number, kb_title, product, issue_desc, new_troubleshooting,
                           engineer_name, timestamp, str(report_id), request_id, case_url, kb_audience))
 
@@ -382,7 +385,7 @@ def submit_report():
                     cursor.execute('''
                         UPDATE engineer_reports
                         SET status = 'auto_rejected'
-                        WHERE id = ?
+                        WHERE id = %s
                     ''', (report_id,))
 
                     conn.commit()
@@ -416,7 +419,7 @@ def submit_report():
                         product, issue_title, issue_description, troubleshooting_steps,
                         submitted_by, submitted_date, priority, status,
                         related_report_ids, request_id, case_url, kb_audience
-                    ) VALUES (?, ?, ?, ?, ?, ?, 'high', 'pending', ?, ?, ?, ?)
+                    ) VALUES (%s, %s, %s, %s, %s, %s, 'high', 'pending', %s, %s, %s, %s)
                 ''', (product, case_title or f"Case {case_number}",
                       new_troubleshooting, new_troubleshooting,
                       engineer_name, timestamp, str(report_id), request_id, case_url, kb_audience))
