@@ -54,51 +54,27 @@ except Exception as e:
 
 st.divider()
 
-# Add email to a report if needed
-st.subheader("Step 2: Add Test Email to Engineer Report")
-
-test_email = st.text_input("Enter test email:", value="test@trendmicro.com")
-
-if st.button("Add Email to Report ID 1", type="primary"):
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-
-        cursor.execute("""
-            UPDATE engineer_reports
-            SET engineer_email = %s
-            WHERE id = 1
-        """, (test_email,))
-
-        conn.commit()
-        st.success(f"✅ Added email {test_email} to engineer report ID 1")
-        conn.close()
-        st.rerun()
-
-    except Exception as e:
-        st.error(f"Error: {str(e)}")
-        import traceback
-        st.code(traceback.format_exc())
-
-st.divider()
-
 # Update REQ-000084
-st.subheader("Step 3: Update REQ-000084")
+st.subheader("Step 2: Fix REQ-000084 to Use Valid Report ID")
 
-if st.button("Update REQ-000084 to use Report ID 1", type="secondary"):
+st.info("**Problem detected:** REQ-000084 references report ID 1, but that report doesn't exist! First report in database is ID 4.")
+st.info(f"**Solution:** Update REQ-000084 to reference report ID 4, which has email: `definitelynotvoshk@gmail.com`")
+
+if st.button("🔧 Fix REQ-000084 to use Report ID 4", type="primary"):
     try:
         conn = get_connection()
         cursor = conn.cursor()
 
         cursor.execute("""
             UPDATE kb_update_requests
-            SET related_report_ids = '1'
+            SET related_report_ids = '4'
             WHERE request_id = 'REQ-000084'
         """)
 
         conn.commit()
-        st.success("✅ Updated REQ-000084 to reference report ID 1")
-        st.info("Now go to **Pending KB Updates** and test REQ-000084!")
+        st.success("✅ Updated REQ-000084 to reference report ID 4")
+        st.success("✅ Report ID 4 has email: definitelynotvoshk@gmail.com")
+        st.info("🎯 Now go to **Pending KB Updates** and test REQ-000084 - email notifications should work!")
         conn.close()
 
     except Exception as e:
