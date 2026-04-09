@@ -185,18 +185,10 @@ try:
                     if pd.notna(row['kb_article_id']):
                         st.markdown("### 📄 Current KB Article")
 
-                        # Try to fetch full KB data (table may not exist)
-                        try:
-                            kb_full = pd.read_sql_query(f"""
-                                SELECT kb_number, title, content, last_updated, product, category, url
-                                FROM kb_articles
-                                WHERE kb_number = '{row['kb_article_id']}'
-                                LIMIT 1
-                            """, conn)
-                        except:
-                            kb_full = pd.DataFrame()  # Empty dataframe if table doesn't exist
+                        # Skip fetching from kb_articles table (not populated yet)
+                        kb_full = pd.DataFrame()
 
-                        if len(kb_full) > 0:
+                        if False:  # Disabled until kb_articles table is populated
                             kb = kb_full.iloc[0]
 
                             # KB Header with clickable KB number
