@@ -835,10 +835,8 @@ try:
                                                                 base_url = st.secrets['BASE_URL']
                                                         except:
                                                             pass
-                                                        # Revision portal is a page in the dashboard
-                                                        import urllib.parse
-                                                        page_name = urllib.parse.quote('98_✏️_Revision_Portal')
-                                                        revision_link = f"{base_url}/{page_name}?token={revision_token}"
+                                                        # Revision portal page URL (Streamlit strips emojis and numbers from page names)
+                                                        revision_link = f"{base_url}/Revision_Portal?token={revision_token}"
 
                                                         # Send follow-up email
                                                         with st.spinner("📧 Sending follow-up email..."):
