@@ -1,0 +1,169 @@
+================================================================================
+KB ASSIST - ENVIRONMENT VARIABLES QUICK REFERENCE
+================================================================================
+
+📋 COPY AND PASTE THESE VARIABLES INTO YOUR DEPLOYMENT PLATFORM
+
+================================================================================
+FOR API SERVER DEPLOYMENT (Render.com, Railway.app, Heroku, etc.)
+================================================================================
+
+Variable Name: DATABASE_URL
+Value: postgresql://neondb_owner:xxxxx@ep-crimson-mode-anmi3txu-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require
+Description: PostgreSQL connection string from Neon.tech
+
+---
+
+Variable Name: AZURE_OPENAI_ENDPOINT
+Value: https://your-resource-name.openai.azure.com/
+Description: Azure OpenAI endpoint URL
+
+---
+
+Variable Name: AZURE_OPENAI_API_KEY
+Value: your-api-key-here
+Description: Azure OpenAI API key
+
+---
+
+Variable Name: AZURE_OPENAI_DEPLOYMENT
+Value: kb-assistant
+Description: Azure OpenAI deployment name
+
+---
+
+Variable Name: SMTP_SERVER
+Value: smtp-mail.outlook.com
+Description: SMTP server for Office 365
+
+---
+
+Variable Name: SMTP_PORT
+Value: 587
+Description: SMTP port
+
+---
+
+Variable Name: SMTP_USE_TLS
+Value: True
+Description: Use TLS for SMTP
+
+---
+
+Variable Name: SMTP_USERNAME
+Value: kbassist@trendmicro.com
+Description: Your email address
+
+---
+
+Variable Name: SMTP_PASSWORD
+Value: your-app-specific-password
+Description: Office 365 app-specific password
+
+---
+
+Variable Name: SMTP_FROM_EMAIL
+Value: kbassist@trendmicro.com
+Description: From email address (same as username)
+
+---
+
+Variable Name: SMTP_FROM_NAME
+Value: KB Assist System
+Description: Display name in emails
+
+================================================================================
+FOR STREAMLIT CLOUD - DASHBOARD
+================================================================================
+
+Go to: https://share.streamlit.io/
+→ Your Dashboard App → Settings → Secrets
+
+Add this in TOML format:
+
+DATABASE_URL = "postgresql://neondb_owner:xxxxx@ep-crimson-mode-anmi3txu-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
+REVISION_PORTAL_URL = "https://kb-assist-revision.streamlit.app"
+
+================================================================================
+FOR STREAMLIT CLOUD - REVISION PORTAL
+================================================================================
+
+Go to: https://share.streamlit.io/
+→ Your Revision Portal App → Settings → Secrets
+
+Add this in TOML format:
+
+DATABASE_URL = "postgresql://neondb_owner:xxxxx@ep-crimson-mode-anmi3txu-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require"
+
+================================================================================
+ACTUAL VALUES YOU NEED TO FILL IN
+================================================================================
+
+1. DATABASE_URL
+   Get from: Neon.tech Dashboard → Connection Details
+   Current value: You should already have this from previous setup
+
+2. AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY, AZURE_OPENAI_DEPLOYMENT
+   Get from: Azure Portal → Your OpenAI Resource → Keys and Endpoint
+
+3. SMTP_USERNAME, SMTP_PASSWORD
+   Your Office 365 email and app-specific password
+   How to get app password:
+   - Go to: https://account.microsoft.com/security
+   - Advanced security options → App passwords → Create new
+
+4. REVISION_PORTAL_URL
+   Your deployed revision portal URL
+   Example: https://kb-assist-revision.streamlit.app
+
+================================================================================
+DEPLOYMENT CHECKLIST
+================================================================================
+
+API Server (needs to be deployed to cloud):
+[ ] DATABASE_URL added
+[ ] AZURE_OPENAI_ENDPOINT added
+[ ] AZURE_OPENAI_API_KEY added
+[ ] AZURE_OPENAI_DEPLOYMENT added
+[ ] SMTP_SERVER added
+[ ] SMTP_PORT added
+[ ] SMTP_USERNAME added
+[ ] SMTP_PASSWORD added
+[ ] SMTP_FROM_EMAIL added
+[ ] API URL noted for extension configuration
+
+Dashboard (already on Streamlit Cloud):
+[ ] DATABASE_URL added to secrets
+[ ] REVISION_PORTAL_URL added to secrets
+
+Revision Portal (already on Streamlit Cloud):
+[ ] DATABASE_URL added to secrets
+
+Browser Extension:
+[ ] API_URL updated to point to deployed API server
+
+================================================================================
+QUICK DEPLOYMENT STEPS
+================================================================================
+
+1. Deploy API Server to Render.com:
+   - Go to: https://render.com/
+   - New → Web Service
+   - Connect GitHub repo: adrianvigan/kb-assist
+   - Build Command: pip install -r requirements.txt
+   - Start Command: python dashboard/api_server.py
+   - Add all environment variables from above
+   - Deploy!
+
+2. Copy API URL (e.g., https://kb-assist-api.onrender.com)
+
+3. Update browser extension:
+   - Edit extension code
+   - Change API_URL to: https://kb-assist-api.onrender.com/submit
+
+4. Test end-to-end:
+   - Submit from extension
+   - Check PostgreSQL database
+   - Verify appears in dashboard
+
+================================================================================

@@ -1,0 +1,68 @@
+================================================================================
+RENDER.COM - ENVIRONMENT VARIABLES (Copy-Paste Ready)
+================================================================================
+
+When creating your Web Service on Render.com, add these environment variables:
+
+KEY: DATABASE_URL
+VALUE: (paste your Neon.tech PostgreSQL URL here)
+
+KEY: AZURE_OPENAI_ENDPOINT
+VALUE: (paste your Azure OpenAI endpoint here)
+
+KEY: AZURE_OPENAI_API_KEY
+VALUE: (paste your Azure OpenAI API key here)
+
+KEY: AZURE_OPENAI_DEPLOYMENT
+VALUE: kb-assistant
+
+KEY: SMTP_SERVER
+VALUE: smtp-mail.outlook.com
+
+KEY: SMTP_PORT
+VALUE: 587
+
+KEY: SMTP_USE_TLS
+VALUE: True
+
+KEY: SMTP_USERNAME
+VALUE: (paste your Office 365 email here)
+
+KEY: SMTP_PASSWORD
+VALUE: (paste your Office 365 app-specific password here)
+
+KEY: SMTP_FROM_EMAIL
+VALUE: (paste your Office 365 email here - same as SMTP_USERNAME)
+
+KEY: SMTP_FROM_NAME
+VALUE: KB Assist System
+
+================================================================================
+RENDER.COM DEPLOYMENT SETTINGS
+================================================================================
+
+Name: kb-assist-api (or whatever you want)
+Region: Oregon (US West) or closest to you
+Branch: main
+Root Directory: (leave blank)
+Build Command: pip install -r requirements.txt
+Start Command: python dashboard/api_server.py
+Instance Type: Free (or Starter if you need more reliability)
+
+================================================================================
+AFTER DEPLOYMENT
+================================================================================
+
+1. Copy your API URL: https://kb-assist-api.onrender.com (or whatever Render gives you)
+
+2. Update browser extension configuration:
+   - Find where API_URL is defined
+   - Change it to: https://kb-assist-api.onrender.com/submit
+
+3. Test the /health endpoint:
+   - Visit: https://kb-assist-api.onrender.com/health
+   - Should return: {"status": "ok", "service": "KB Assist API"}
+
+4. Test a submission from the browser extension
+
+================================================================================
