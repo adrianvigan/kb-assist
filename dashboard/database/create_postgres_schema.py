@@ -75,7 +75,8 @@ def create_tables():
                 notes TEXT,
                 revision_number INTEGER DEFAULT 1,
                 original_request_id VARCHAR(20),
-                parent_request_id VARCHAR(20)
+                parent_request_id VARCHAR(20),
+                approved_kb_link VARCHAR(500)
             )
         ''')
         print("kb_update_requests table created")
@@ -100,7 +101,8 @@ def create_tables():
                 notes TEXT,
                 troubleshooting_steps TEXT,
                 frequency_count INTEGER DEFAULT 1,
-                assigned_to VARCHAR(200)
+                assigned_to VARCHAR(200),
+                kb_created_id VARCHAR(50)
             )
         ''')
         print("new_kb_requests table created")
