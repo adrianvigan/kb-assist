@@ -49,7 +49,8 @@ def create_tables():
 
                 -- Additional fields
                 case_url VARCHAR(500),
-                request_id VARCHAR(20)
+                request_id VARCHAR(20),
+                kb_article_link VARCHAR(500)
             )
         ''')
         print("engineer_reports table created")
