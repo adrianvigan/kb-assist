@@ -25,7 +25,8 @@ def add_columns():
         cursor.execute('''
             ALTER TABLE kb_update_requests
             ADD COLUMN IF NOT EXISTS revision_number INTEGER DEFAULT 1,
-            ADD COLUMN IF NOT EXISTS original_request_id VARCHAR(20)
+            ADD COLUMN IF NOT EXISTS original_request_id VARCHAR(20),
+            ADD COLUMN IF NOT EXISTS parent_request_id VARCHAR(20)
         ''')
         conn.commit()
         print("kb_update_requests columns added successfully")
@@ -37,7 +38,8 @@ def add_columns():
         cursor.execute('''
             ALTER TABLE new_kb_requests
             ADD COLUMN IF NOT EXISTS troubleshooting_steps TEXT,
-            ADD COLUMN IF NOT EXISTS frequency_count INTEGER DEFAULT 1
+            ADD COLUMN IF NOT EXISTS frequency_count INTEGER DEFAULT 1,
+            ADD COLUMN IF NOT EXISTS assigned_to VARCHAR(200)
         ''')
         conn.commit()
         print("new_kb_requests columns added successfully")

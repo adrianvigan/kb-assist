@@ -74,7 +74,8 @@ def create_tables():
                 reviewed_date TIMESTAMP,
                 notes TEXT,
                 revision_number INTEGER DEFAULT 1,
-                original_request_id VARCHAR(20)
+                original_request_id VARCHAR(20),
+                parent_request_id VARCHAR(20)
             )
         ''')
         print("kb_update_requests table created")
@@ -98,7 +99,8 @@ def create_tables():
                 reviewed_date TIMESTAMP,
                 notes TEXT,
                 troubleshooting_steps TEXT,
-                frequency_count INTEGER DEFAULT 1
+                frequency_count INTEGER DEFAULT 1,
+                assigned_to VARCHAR(200)
             )
         ''')
         print("new_kb_requests table created")

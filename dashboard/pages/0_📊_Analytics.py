@@ -164,9 +164,10 @@ product_stats = pd.read_sql_query(f"""
         product,
         COUNT(*) as total,
         SUM(CASE WHEN report_type = 'no_kb_exists' THEN 1 ELSE 0 END) as no_kb,
-        SUM(CASE WHEN report_type = 'kb_update_request' THEN 1 ELSE 0 END) as update_request
+        SUM(CASE WHEN report_type = 'kb_outdated' THEN 1 ELSE 0 END) as outdated,
+        SUM(CASE WHEN report_type = 'kb_failed' THEN 1 ELSE 0 END) as missing_steps
     FROM engineer_reports
-    WHERE DATE(created_at) >= '{date_filter}' AND product IS NOT NULL
+    WHERE created_at >= '{date_filter}' AND product IS NOT NULL
     GROUP BY product
     ORDER BY total DESC
     LIMIT 15
