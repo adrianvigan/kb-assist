@@ -663,7 +663,18 @@ try:
                                         st.caption("Help the engineer improve their submission by providing specific feedback. They'll be able to revise and resubmit.")
 
                                         st.markdown("---")
-                                        st.caption(f"📧 Engineer will be notified: {engineer_email or 'Unknown - No email found'}")
+
+                                        # Email input - show manual input if no email in database
+                                        if not engineer_email:
+                                            st.warning("⚠️ No engineer email found in database")
+                                            engineer_email_input = st.text_input(
+                                                "Engineer Email (Required)",
+                                                key=f"email_input_{current_row_id}",
+                                                placeholder="engineer@trendmicro.com"
+                                            )
+                                        else:
+                                            st.caption(f"📧 Engineer will be notified: {engineer_email}")
+                                            engineer_email_input = None
 
                                         # Use unique keys that don't reset
                                         feedback_key = f"feedback_new_{current_row_id}"
@@ -723,9 +734,11 @@ try:
                                             if not general_feedback or not general_feedback.strip():
                                                 st.error("⚠️ General feedback is required")
                                             else:
-                                                # Use database email (no manual input)
-                                                if not engineer_email or not engineer_email.strip():
-                                                    st.error("⚠️ No engineer email found. Cannot send follow-up.")
+                                                # Determine which email to use
+                                                final_email = engineer_email_input if engineer_email_input else engineer_email
+
+                                                if not final_email or not final_email.strip():
+                                                    st.error("⚠️ Engineer email is required to send follow-up")
                                                 else:
                                                     # Combine all feedback
                                                     feedback_parts = []
@@ -759,7 +772,7 @@ try:
                                                     with st.spinner("📧 Sending follow-up email..."):
                                                         email_result = send_rejection_email(
                                                             request_id=current_request_id,
-                                                            engineer_email=engineer_email,
+                                                            engineer_email=final_email,
                                                             engineer_name=engineer_name or "Engineer",
                                                             feedback_text=feedback,
                                                             revision_link=revision_link
@@ -780,7 +793,7 @@ try:
                                                         conn_reject.commit()
                                                         conn_reject.close()
 
-                                                        st.success(f"✅ Email sent successfully to {engineer_email}")
+                                                        st.success(f"✅ Email sent successfully to {final_email}")
                                                         st.info(f"📧 The engineer has been notified with structured feedback")
                                                         st.info(f"📋 Status updated to: **Pending Follow-up**")
                                                         st.balloons()
