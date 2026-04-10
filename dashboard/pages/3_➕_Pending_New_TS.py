@@ -519,9 +519,10 @@ try:
                                     # Capture values BEFORE dialog
                                     current_row_id = row['id']
                                     current_request_id = row['request_id']
-                                    current_related_report_ids = row['related_report_ids']
                                     current_product = row.get('product')
                                     current_issue = row.get('issue_title') or row.get('issue_description')
+                                    current_engineer_email = row.get('engineer_email') if pd.notna(row.get('engineer_email')) else None
+                                    current_engineer_name = row.get('submitted_by') if pd.notna(row.get('submitted_by')) else None
 
                                     # Show approval modal
                                     @st.dialog(f"Approve Request {current_request_id}", width="large")
@@ -559,29 +560,14 @@ try:
                                             if not kb_link or len(kb_link.strip()) < 10:
                                                 st.error("⚠️ Please provide a valid KB article link")
                                             else:
-                                                    # Get engineer email
-                                                    conn_approve = get_db_connection()
-                                                    cursor_approve = conn_approve.cursor()
+                                                    # Use engineer info from row (already captured)
+                                                    engineer_email = current_engineer_email
+                                                    engineer_name = current_engineer_name
 
-                                                    # Get engineer email from related report
-                                                    if current_related_report_ids:
-                                                        report_id = str(current_related_report_ids).split(',')[0]
-                                                        cursor_approve.execute("""
-                                                            SELECT engineer_email, engineer_name
-                                                            FROM engineer_reports
-                                                            WHERE id = %s
-                                                        """, (report_id,))
-                                                        engineer_data = cursor_approve.fetchone()
-
-                                                        if engineer_data:
-                                                            engineer_email = engineer_data[0]
-                                                            engineer_name = engineer_data[1]
-
-                                                            # Check if email exists
-                                                            if not engineer_email:
-                                                                st.error("❌ This request has no email address. Please ask the engineer to resubmit with their email.")
-                                                                conn_approve.close()
-                                                                return
+                                                    # Check if email exists
+                                                    if not engineer_email:
+                                                        st.error("❌ This request has no email address. Please ask the engineer to resubmit with their email.")
+                                                    else:
 
                                                             # Generate verification token
                                                             import sys
@@ -605,6 +591,10 @@ try:
                                                                 )
 
                                                             if email_result['success']:
+                                                                # Create fresh connection for database update
+                                                                conn_approve = get_db_connection()
+                                                                cursor_approve = conn_approve.cursor()
+
                                                                 # Update status to approved and store KB link
                                                                 cursor_approve.execute("""
                                                                     UPDATE new_kb_requests
@@ -646,12 +636,6 @@ try:
                                                                 st.rerun()
                                                             else:
                                                                 st.error(f"❌ Failed to send email: {email_result['message']}")
-                                                                conn_approve.close()
-                                                        else:
-                                                            st.error("❌ Engineer email not found in related report")
-                                                            conn_approve.close()
-                                                    else:
-                                                        st.error("❌ No related report found for this request")
 
                                     show_approval_modal()
                                 else:
@@ -665,23 +649,11 @@ try:
                                     # Capture values BEFORE dialog
                                     current_row_id = row['id']
                                     current_request_id = row['request_id']
-                                    current_related_report_ids = row['related_report_ids']
                                     current_siebel = siebel_id.strip()
 
-                                    # Get engineer info from related report
-                                    engineer_email = None
-                                    engineer_name = None
-                                    if pd.notna(current_related_report_ids):
-                                        report_id = str(current_related_report_ids).split(',')[0]
-                                        eng_query = pd.read_sql(f"""
-                                            SELECT engineer_email, engineer_name
-                                            FROM engineer_reports
-                                            WHERE id = {report_id}
-                                            LIMIT 1
-                                        """, conn)
-                                        if len(eng_query) > 0:
-                                            engineer_email = eng_query.iloc[0]['engineer_email']
-                                            engineer_name = eng_query.iloc[0]['engineer_name']
+                                    # Get engineer info from row (already joined in main query)
+                                    engineer_email = row.get('engineer_email') if pd.notna(row.get('engineer_email')) else None
+                                    engineer_name = row.get('submitted_by') if pd.notna(row.get('submitted_by')) else None
 
                                     # Show rejection modal
                                     @st.dialog(f"Request Follow-up for {current_request_id}", width="large")
