@@ -449,34 +449,6 @@ try:
 
                         st.markdown("---")
 
-                    # Get related reports
-                    related_reports = pd.read_sql("""
-                        SELECT
-                            report_date,
-                            case_number,
-                            engineer_name,
-                            new_troubleshooting
-                        FROM engineer_reports
-                        WHERE product = %s
-                          AND report_type = 'no_kb_exists'
-                        ORDER BY report_date DESC
-                        LIMIT 5
-                    """, conn, params=(row['product'],))
-
-                    if len(related_reports) > 0:
-                        st.markdown(f"**👥 Related Engineer Reports ({len(related_reports)}):**")
-                        st.dataframe(
-                            related_reports,
-                            use_container_width=True,
-                            hide_index=True,
-                            column_config={
-                                "report_date": "Date",
-                                "case_number": "Case #",
-                                "engineer_name": "Engineer",
-                                "new_troubleshooting": st.column_config.TextColumn("Solution", width="large")
-                            }
-                        )
-
                 with col2:
                     st.markdown("**📊 Details:**")
                     if pd.notna(row.get('request_id')):
