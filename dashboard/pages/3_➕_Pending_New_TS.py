@@ -109,12 +109,14 @@ try:
 
     where_clause = " AND ".join(filters)
 
-    # Get new KB requests with engineer notes
-    # Try to get email from both sources: engineer_reports JOIN or submitted_by_email column
+    # Get new KB requests with engineer notes (SAME AS PENDING KB UPDATES)
     new_kb_df = pd.read_sql(f"""
         SELECT
             nkr.id,
             nkr.request_id,
+            nkr.original_request_id,
+            nkr.revision_number,
+            nkr.parent_request_id,
             nkr.issue_title,
             nkr.product,
             nkr.issue_description,
@@ -138,11 +140,10 @@ try:
             nkr.ai_processed_at
         FROM new_kb_requests nkr
         LEFT JOIN engineer_reports er ON nkr.related_report_ids = er.id::text
-        LEFT JOIN new_kb_requests nkr_orig ON nkr.request_id = nkr_orig.request_id AND nkr_orig.id = (
-            SELECT MIN(id) FROM new_kb_requests WHERE request_id = nkr.request_id
-        )
+        LEFT JOIN new_kb_requests nkr_orig ON nkr.request_id = nkr_orig.request_id AND COALESCE(nkr_orig.revision_number, 0) = 0
         LEFT JOIN engineer_reports er_orig ON nkr_orig.related_report_ids = er_orig.id::text
         WHERE {where_clause}
+          AND nkr.status NOT IN ('superseded', 'approved', 'closed')
           AND nkr.request_id NOT IN (
               SELECT request_id FROM new_kb_requests WHERE status = 'approved'
           )
@@ -175,6 +176,11 @@ try:
             priority_emoji = {'high': '🔴', 'medium': '🟡', 'low': '🟢'}.get(row['priority'], '⚪')
             frequency_badge = f"🔥 {row['frequency_count']}x" if row['frequency_count'] > 1 else ""
 
+            # Revision indicator (SAME AS PENDING KB UPDATES)
+            revision_indicator = ""
+            if pd.notna(row.get('revision_number')) and row['revision_number'] > 0:
+                revision_indicator = f" [Revision {int(row['revision_number'])}]"
+
             # KB Audience indicator
             audience_badge = ""
             if pd.notna(row.get('kb_audience')):
@@ -184,7 +190,7 @@ try:
                     audience_badge = " 🌐 [PUBLIC KB]"
 
             with st.expander(
-                f"{priority_emoji} **{row['issue_title']}** ({row['product']}) {frequency_badge} - "
+                f"{priority_emoji} **{row['issue_title']}**{revision_indicator} ({row['product']}) {frequency_badge} - "
                 f"Priority: {row['priority'].upper()}{audience_badge}",
                 expanded=(idx < 3 and status_filter == 'pending')
             ):
@@ -330,41 +336,39 @@ try:
                         SELECT
                             nkr.id,
                             nkr.request_id,
-                            nkr.issue_title,
+                            nkr.revision_number,
+                            nkr.status,
                             nkr.issue_description,
                             nkr.troubleshooting_steps,
                             nkr.notes,
                             nkr.submitted_date,
                             nkr.reviewed_by,
                             nkr.reviewed_date,
-                            nkr.status,
                             er.engineer_notes
                         FROM new_kb_requests nkr
-                        LEFT JOIN engineer_reports er ON nkr.related_report_ids = CAST(er.id AS TEXT)
-                        WHERE nkr.request_id = '{original_req_id}'
+                        LEFT JOIN engineer_reports er ON nkr.related_report_ids = er.id::text
+                        WHERE (nkr.request_id = '{original_req_id}' OR nkr.original_request_id = '{original_req_id}')
                         AND nkr.id != {current_row_id}
-                        ORDER BY nkr.id ASC
+                        ORDER BY COALESCE(nkr.revision_number, 0) ASC, nkr.id ASC
                     """
 
                     revision_history_df = pd.read_sql_query(revision_history_query, conn)
 
                     # Show revision history if there are previous versions
                     if len(revision_history_df) > 0:
-                        st.markdown(f"**📜 Revision History** ({len(revision_history_df)} previous version{'s' if len(revision_history_df) != 1 else ''})")
+                        st.markdown(f"**📜 Revision History** ({len(revision_history_df)} versions)")
 
                         with st.expander("View all revisions and feedback", expanded=False):
                             # Display each revision
                             for rev_idx, rev_row in revision_history_df.iterrows():
-                                # Determine which version this is based on order
-                                version_num = rev_idx + 1
-                                is_original = (rev_idx == 0)
+                                rev_num = int(rev_row['revision_number']) if pd.notna(rev_row['revision_number']) and rev_row['revision_number'] > 0 else 0
 
                                 # Build revision label
-                                if is_original:
+                                if rev_num == 0:
                                     rev_label = "📄 Original Submission"
                                     status_emoji = "🟢" if rev_row['status'] == 'superseded' else "⚪"
                                 else:
-                                    rev_label = f"✏️ Revision {version_num - 1}"
+                                    rev_label = f"✏️ Revision {rev_num}"
                                     status_emoji = {
                                         'pending': '🟡',
                                         'approved': '✅',
@@ -453,7 +457,11 @@ try:
                 with col2:
                     st.markdown("**📊 Details:**")
                     if pd.notna(row.get('request_id')):
-                        st.write(f"**Request ID:** `{row['request_id']}`")
+                        # Show request ID with revision number (SAME AS PENDING KB UPDATES)
+                        if pd.notna(row.get('revision_number')) and row['revision_number'] > 0:
+                            st.write(f"**Request ID:** `{row['request_id']}` (Revision {int(row['revision_number'])})")
+                        else:
+                            st.write(f"**Request ID:** `{row['request_id']}`")
 
                     st.write(f"**Product:** {row['product']}")
                     st.write(f"**Submitted by:** {row['submitted_by']}")
