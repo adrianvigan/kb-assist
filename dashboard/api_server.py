@@ -224,10 +224,22 @@ def submit_report():
         conn = get_connection()
         cursor = conn.cursor()
 
-        # Generate request ID (simple sequential for now)
-        cursor.execute("SELECT COUNT(*) FROM engineer_reports")
-        count = cursor.fetchone()[0]
-        request_id = f"REQ-{str(count + 1).zfill(6)}"
+        # Generate unique request ID across all tables
+        # Get the highest request number from all tables that use request_id
+        cursor.execute("""
+            SELECT COALESCE(MAX(CAST(SUBSTRING(request_id FROM 5) AS INTEGER)), 0) as max_num
+            FROM (
+                SELECT request_id FROM engineer_reports WHERE request_id IS NOT NULL
+                UNION ALL
+                SELECT request_id FROM new_kb_requests WHERE request_id IS NOT NULL
+                UNION ALL
+                SELECT request_id FROM kb_update_requests WHERE request_id IS NOT NULL
+            ) all_requests
+        """)
+        max_num = cursor.fetchone()[0]
+        request_id = f"REQ-{str(max_num + 1).zfill(6)}"
+
+        print(f"[DEBUG] Generated request_id: {request_id}", flush=True)
 
         # Insert into engineer_reports table
         cursor.execute('''
@@ -429,19 +441,65 @@ def submit_report():
                         traceback.print_exc()
 
             elif report_type == 'no_kb_exists':
-                # For new KB requests, just create entry (no AI validation yet)
+                # For new TS requests: Smart hybrid AI KB matching
+                issue_title = case_title or f"Case {case_number}"
+
+                print(f"\n{'='*80}", flush=True)
+                print(f"🤖 SMART HYBRID KB MATCHING for {request_id}", flush=True)
+                print(f"{'='*80}", flush=True)
+
+                # Run AI KB matcher (synchronous - fast!)
+                suggested_kbs_json = None
+                ai_match_decision = 'unique'  # Default
+
+                try:
+                    # Import and run AI matcher
+                    sys.path.insert(0, os.path.dirname(__file__))
+                    from ai_kb_matcher import KBMatcher
+
+                    matcher = KBMatcher()
+                    result = matcher.find_similar_kbs(
+                        product=product,
+                        issue_description=new_troubleshooting,
+                        troubleshooting_steps=new_troubleshooting
+                    )
+
+                    if result['status'] == 'complete':
+                        ai_match_decision = result['decision']
+
+                        # Only store KB suggestions if AI found similar ones
+                        if result['decision'] == 'similar' and result['similar_kbs']:
+                            import json
+                            suggested_kbs_json = json.dumps(result['similar_kbs'])
+                            print(f"✅ AI found {len(result['similar_kbs'])} similar KB(s)", flush=True)
+                        else:
+                            print(f"✅ AI decision: {ai_match_decision.upper()}", flush=True)
+                    else:
+                        print(f"⚠️  AI matching failed, treating as unique", flush=True)
+
+                except Exception as e:
+                    print(f"⚠️  AI KB matching error: {e} (treating as unique)", flush=True)
+                    import traceback
+                    traceback.print_exc()
+
+                # Insert into new_kb_requests
                 cursor.execute('''
                     INSERT INTO new_kb_requests (
                         product, issue_title, issue_description, troubleshooting_steps,
                         submitted_by, submitted_date, priority, status,
-                        related_report_ids, request_id, case_url, kb_audience
-                    ) VALUES (%s, %s, %s, %s, %s, %s, 'high', 'pending', %s, %s, %s, %s)
-                ''', (product, case_title or f"Case {case_number}",
+                        related_report_ids, request_id, case_url, kb_audience,
+                        suggested_kbs, ai_match_status
+                    ) VALUES (%s, %s, %s, %s, %s, %s, 'high', 'pending', %s, %s, %s, %s, %s, 'complete')
+                ''', (product, issue_title,
                       new_troubleshooting, new_troubleshooting,
-                      engineer_name, timestamp, str(report_id), request_id, case_url, kb_audience))
+                      engineer_name, timestamp, str(report_id), request_id, case_url, kb_audience,
+                      suggested_kbs_json))
 
                 conn.commit()
                 submission_status = "approved"
+
+                print(f"✅ New TS request created: {request_id}", flush=True)
+                print(f"{'='*80}\n", flush=True)
 
                 # Send confirmation email
                 try:
@@ -454,7 +512,7 @@ def submit_report():
                     )
                     print(f"📧 Confirmation email sent to {engineer_email}: {email_result}", flush=True)
                 except Exception as e:
-                    print(f"⚠️ Email failed: {e}", flush=True)
+                    print(f"⚠️  Email failed: {e}", flush=True)
                     import traceback
                     traceback.print_exc()
 
