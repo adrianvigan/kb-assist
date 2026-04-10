@@ -850,41 +850,52 @@ try:
                                 if pd.notna(row['related_report_ids']) and str(row['related_report_ids']).strip():
                                     report_id = int(str(row['related_report_ids']).split(',')[0])
 
-                                    # Import and run AI generator (using standalone function)
+                                    # Import and run AI generator (using class with httpx fix)
                                     import sys
                                     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-                                    from ai_kb_generator import generate_new_kb_draft
+                                    from ai_kb_generator import KBGenerator
 
                                     with st.spinner("🤖 AI is generating KB draft..."):
                                         try:
-                                            result = generate_new_kb_draft(report_id)
+                                            # Verify report exists first
+                                            verify_conn = get_db_connection()
+                                            verify_cursor = verify_conn.cursor()
+                                            verify_cursor.execute("SELECT id, case_number, product FROM engineer_reports WHERE id = %s", (report_id,))
+                                            verify_result = verify_cursor.fetchone()
+                                            verify_conn.close()
 
-                                            if result.get('success'):
-                                                # Show modal dialog with the draft (no saving)
-                                                @st.dialog(f"🤖 AI-Generated KB Draft", width="large")
-                                                def show_draft():
-                                                    st.markdown(f"### 📝 KB Draft Preview")
-                                                    st.caption(f"Tokens used: {result.get('tokens_used', 0)}")
-                                                    st.divider()
-
-                                                    # Display title
-                                                    st.markdown("#### Title:")
-                                                    st.info(result['title'])
-
-                                                    st.divider()
-
-                                                    # Display draft content
-                                                    st.markdown("#### Content:")
-                                                    st.markdown(result['content'])
-
-                                                    st.divider()
-
-                                                    if st.button("Close", use_container_width=True):
-                                                        st.rerun()
-
-                                                show_draft()
+                                            if not verify_result:
+                                                st.error(f"❌ Engineer report #{report_id} not found in database. Please ensure the report was submitted correctly.")
                                             else:
-                                                st.error(f"❌ Generation failed: {result.get('error')}")
+                                                generator = KBGenerator()
+                                                result = generator.generate_kb_draft(report_id)
+
+                                                if result.get('success'):
+                                                    # Show modal dialog with the draft (no saving)
+                                                    @st.dialog(f"🤖 AI-Generated KB Draft", width="large")
+                                                    def show_draft():
+                                                        st.markdown(f"### 📝 KB Draft Preview")
+                                                        st.caption(f"Tokens used: {result.get('tokens_used', 0)}")
+                                                        st.divider()
+
+                                                        # Display title
+                                                        st.markdown("#### Title:")
+                                                        st.info(result['title'])
+
+                                                        st.divider()
+
+                                                        # Display draft content
+                                                        st.markdown("#### Content:")
+                                                        st.markdown(result['content'])
+
+                                                        st.divider()
+
+                                                        if st.button("Close", use_container_width=True):
+                                                            st.rerun()
+
+                                                    show_draft()
+                                                else:
+                                                    st.error(f"❌ Generation failed: {result.get('error')}")
                                         except Exception as e:
                                             st.error(f"❌ Error: {str(e)}")
                                 else:
