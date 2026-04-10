@@ -850,15 +850,14 @@ try:
                                 if pd.notna(row['related_report_ids']) and str(row['related_report_ids']).strip():
                                     report_id = int(str(row['related_report_ids']).split(',')[0])
 
-                                    # Import and run AI generator
+                                    # Import and run AI generator (using standalone function)
                                     import sys
                                     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-                                    from ai_kb_generator import KBGenerator
+                                    from ai_kb_generator import generate_new_kb_draft
 
                                     with st.spinner("🤖 AI is generating KB draft..."):
                                         try:
-                                            generator = KBGenerator()
-                                            result = generator.generate_kb_draft(report_id)
+                                            result = generate_new_kb_draft(report_id)
 
                                             if result.get('success'):
                                                 # Show modal dialog with the draft (no saving)
