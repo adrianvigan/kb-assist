@@ -131,7 +131,10 @@ try:
             nkr.reviewed_date,
             er_orig.engineer_notes as engineer_notes,
             er.engineer_email,
-            nkr.kb_audience
+            nkr.kb_audience,
+            nkr.suggested_kbs,
+            nkr.ai_match_status,
+            nkr.ai_processed_at
         FROM new_kb_requests nkr
         LEFT JOIN engineer_reports er ON nkr.related_report_ids = CAST(er.id AS TEXT)
         LEFT JOIN new_kb_requests nkr_orig ON nkr.request_id = nkr_orig.request_id AND nkr_orig.id = (
@@ -184,6 +187,51 @@ try:
                 f"Priority: {row['priority'].upper()}{audience_badge}",
                 expanded=(idx < 3 and status_filter == 'pending')
             ):
+                # Display AI-suggested KBs (if available)
+                if pd.notna(row.get('suggested_kbs')) and row['suggested_kbs']:
+                    import json
+                    try:
+                        suggested_matches = json.loads(row['suggested_kbs']) if isinstance(row['suggested_kbs'], str) else row['suggested_kbs']
+
+                        if suggested_matches and len(suggested_matches) > 0:
+                            st.warning(f"⚠️ **AI found {len(suggested_matches)} potential match{'es' if len(suggested_matches) > 1 else ''}**")
+
+                            for i, match in enumerate(suggested_matches, 1):
+                                confidence_pct = int(match['confidence'] * 100)
+                                confidence_color = "#dc3545" if confidence_pct >= 90 else "#fd7e14" if confidence_pct >= 80 else "#ffc107"
+
+                                st.markdown(f"""
+                                <div style="background-color: #fff3cd; padding: 12px; margin: 8px 0; border-left: 4px solid {confidence_color}; border-radius: 5px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div style="flex: 1;">
+                                            <strong>📌 Match #{i}: KB-{match['kb_number']}</strong> ({confidence_pct}% match)<br>
+                                            <span style="color: #666;">{match['title']}</span><br>
+                                            <small><em>{match.get('reason', 'Similar content detected')}</em></small>
+                                        </div>
+                                        <div>
+                                            <a href="{match['url']}" target="_blank" style="background-color: #0066cc; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; display: inline-block;">
+                                                View KB
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                            st.caption("💡 AI scanned 1,331 KB articles. Review these matches before proceeding with new KB creation.")
+                            st.markdown("---")
+
+                    except Exception as e:
+                        st.caption(f"⚠️ Error loading AI suggestions: {e}")
+
+                elif row.get('ai_match_status') == 'processing':
+                    st.info("🤖 AI is currently searching KB database for similar articles...")
+                    st.caption("Engineer will receive an email when processing is complete")
+                    st.markdown("---")
+
+                elif row.get('ai_match_status') == 'complete':
+                    st.success("✅ AI check complete - No similar KBs found. Request appears to be unique.")
+                    st.markdown("---")
+
                 col1, col2 = st.columns([2, 1])
 
                 with col1:
@@ -409,8 +457,8 @@ try:
                             engineer_name,
                             new_troubleshooting
                         FROM engineer_reports
-                        WHERE product = ?
-                        AND report_type = 'no_kb_exists'
+                        WHERE product = %s
+                          AND report_type = 'no_kb_exists'
                         ORDER BY report_date DESC
                         LIMIT 5
                     """, conn, params=(row['product'],))
