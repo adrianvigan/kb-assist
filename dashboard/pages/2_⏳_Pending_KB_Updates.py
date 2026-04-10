@@ -124,9 +124,12 @@ try:
             er.report_type,
             er_orig.engineer_notes as engineer_notes,
             er.engineer_email,
-            kbu.kb_audience
+            kbu.kb_audience,
+            kbu.suggested_kbs,
+            kbu.ai_match_status,
+            kbu.ai_processed_at
         FROM kb_update_requests kbu
-        LEFT JOIN engineer_reports er ON kbu.related_report_ids = CAST(er.id AS TEXT)
+        LEFT JOIN engineer_reports er ON kbu.related_report_ids = er.id::text
         LEFT JOIN kb_update_requests kbu_orig ON kbu.request_id = kbu_orig.request_id AND kbu_orig.revision_number = 0
         LEFT JOIN engineer_reports er_orig ON kbu_orig.related_report_ids = CAST(er_orig.id AS TEXT)
         WHERE {where_clause}
@@ -178,6 +181,51 @@ try:
                 f"({row['product']}) - Priority: {row['priority'].upper()}{revision_indicator}{audience_badge}",
                 expanded=(idx < 3 and status_filter == 'pending')  # Expand first 3 if pending
             ):
+                # Display AI-suggested KBs (if available) - SAME AS PENDING NEW TS
+                if pd.notna(row.get('suggested_kbs')) and row['suggested_kbs']:
+                    import json
+                    try:
+                        suggested_matches = json.loads(row['suggested_kbs']) if isinstance(row['suggested_kbs'], str) else row['suggested_kbs']
+
+                        if suggested_matches and len(suggested_matches) > 0:
+                            st.warning(f"⚠️ **AI found {len(suggested_matches)} potentially redundant KB{'s' if len(suggested_matches) > 1 else ''}**")
+
+                            for i, match in enumerate(suggested_matches, 1):
+                                confidence_pct = int(match['confidence'] * 100)
+                                confidence_color = "#dc3545" if confidence_pct >= 90 else "#fd7e14" if confidence_pct >= 80 else "#ffc107"
+
+                                st.markdown(f"""
+                                <div style="background-color: #fff3cd; padding: 12px; margin: 8px 0; border-left: 4px solid {confidence_color}; border-radius: 5px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div style="flex: 1;">
+                                            <strong>📌 Match #{i}: KB-{match['kb_number']}</strong> ({confidence_pct}% match)<br>
+                                            <span style="color: #666;">{match['title']}</span><br>
+                                            <small><em>{match.get('reason', 'Similar content detected')}</em></small>
+                                        </div>
+                                        <div>
+                                            <a href="{match['url']}" target="_blank" style="background-color: #0066cc; color: white; padding: 8px 16px; border-radius: 5px; text-decoration: none; display: inline-block;">
+                                                View KB
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+
+                            st.caption("💡 AI scanned 1,331 KB articles. Review these matches - this update may be redundant.")
+                            st.markdown("---")
+
+                    except Exception as e:
+                        st.caption(f"⚠️ Error loading AI suggestions: {e}")
+
+                elif row.get('ai_match_status') == 'processing':
+                    st.info("🤖 AI is currently checking for redundant KB updates...")
+                    st.caption("Processing will complete shortly")
+                    st.markdown("---")
+
+                elif row.get('ai_match_status') == 'complete':
+                    st.success("✅ AI check complete - No redundant KBs found. This update appears unique.")
+                    st.markdown("---")
+
                 col1, col2 = st.columns([2, 1])
 
                 with col1:
@@ -374,7 +422,7 @@ try:
                             er.kb_article_link,
                             er.engineer_notes
                         FROM kb_update_requests kbu
-                        LEFT JOIN engineer_reports er ON kbu.related_report_ids = CAST(er.id AS TEXT)
+                        LEFT JOIN engineer_reports er ON kbu.related_report_ids = er.id::text
                         WHERE (kbu.request_id = '{original_req_id}' OR kbu.original_request_id = '{original_req_id}')
                         AND kbu.id != {current_row_id}
                         ORDER BY kbu.revision_number ASC, kbu.id ASC
