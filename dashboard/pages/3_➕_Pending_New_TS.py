@@ -853,10 +853,20 @@ try:
                                     # Import and run AI generator
                                     import sys
                                     sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+                                    # Force module reload to avoid cache issues
+                                    import importlib
+                                    if 'ai_kb_generator' in sys.modules:
+                                        importlib.reload(sys.modules['ai_kb_generator'])
+
                                     from ai_kb_generator import KBGenerator
 
                                     with st.spinner("🤖 AI is generating KB draft..."):
                                         try:
+                                            # Debug: Check openai version
+                                            import openai
+                                            st.info(f"🔍 Debug: openai version = {openai.__version__}")
+
                                             generator = KBGenerator()
                                             result = generator.generate_kb_draft(report_id)
 
@@ -888,6 +898,10 @@ try:
                                                 st.error(f"❌ Generation failed: {result.get('error')}")
                                         except Exception as e:
                                             st.error(f"❌ Error: {str(e)}")
+                                            # Show full traceback for debugging
+                                            import traceback
+                                            with st.expander("🐛 Debug Info"):
+                                                st.code(traceback.format_exc())
                                 else:
                                     st.warning("No engineer report linked to this KB request")
 
