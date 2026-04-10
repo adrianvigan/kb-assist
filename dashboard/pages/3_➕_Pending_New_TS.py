@@ -137,11 +137,11 @@ try:
             nkr.ai_match_status,
             nkr.ai_processed_at
         FROM new_kb_requests nkr
-        LEFT JOIN engineer_reports er ON nkr.related_report_ids = CAST(er.id AS TEXT)
+        LEFT JOIN engineer_reports er ON nkr.related_report_ids = er.id::text
         LEFT JOIN new_kb_requests nkr_orig ON nkr.request_id = nkr_orig.request_id AND nkr_orig.id = (
             SELECT MIN(id) FROM new_kb_requests WHERE request_id = nkr.request_id
         )
-        LEFT JOIN engineer_reports er_orig ON nkr_orig.related_report_ids = CAST(er_orig.id AS TEXT)
+        LEFT JOIN engineer_reports er_orig ON nkr_orig.related_report_ids = er_orig.id::text
         WHERE {where_clause}
           AND nkr.request_id NOT IN (
               SELECT request_id FROM new_kb_requests WHERE status = 'approved'
@@ -759,14 +759,18 @@ try:
                                                     from utils.email_sender import send_rejection_email
 
                                                     revision_token = generate_token(current_request_id, 'revision')
-                                                    # Link to SEPARATE revision portal app (engineers-only app)
-                                                    revision_portal_url = os.getenv('REVISION_PORTAL_URL', 'http://localhost:8502')
-                                                    # For Streamlit Cloud, secrets override env
+                                                    # Link to revision portal (engineers can revise and resubmit)
+                                                    # Use Streamlit secrets if available, otherwise use BASE_URL
                                                     try:
                                                         if hasattr(st, 'secrets') and 'REVISION_PORTAL_URL' in st.secrets:
                                                             revision_portal_url = st.secrets['REVISION_PORTAL_URL']
+                                                        else:
+                                                            # Fallback: use BASE_URL from secrets or env
+                                                            base_url = st.secrets.get('BASE_URL', os.getenv('BASE_URL', 'https://kb-assist.streamlit.app'))
+                                                            revision_portal_url = base_url
                                                     except:
-                                                        pass
+                                                        revision_portal_url = 'https://kb-assist.streamlit.app'
+
                                                     revision_link = f"{revision_portal_url}?token={revision_token}"
 
                                                     with st.spinner("📧 Sending follow-up email..."):
