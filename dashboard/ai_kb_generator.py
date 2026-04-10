@@ -1581,6 +1581,195 @@ Output the IMPROVED, WELL-STRUCTURED CONTENT:"""
         return f"❌ AI Generation Error: {str(e)}\n\nPlease try again or proceed with manual edits."
 
 
+def generate_new_kb_draft_from_request(request_id):
+    """
+    Generate KB draft from new_kb_requests table (for Pending New TS)
+
+    Args:
+        request_id: ID of the new_kb_requests row
+
+    Returns:
+        dict with 'success', 'title', 'content', 'metadata', 'tokens_used'
+    """
+    print(f"\n🤖 Generating KB draft for New TS Request ID: {request_id}")
+
+    try:
+        # Initialize Azure OpenAI client with custom httpx client
+        import httpx
+        http_client = httpx.Client(
+            timeout=60.0,
+            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
+        )
+
+        client = AzureOpenAI(
+            azure_endpoint=AZURE_ENDPOINT,
+            api_key=AZURE_API_KEY,
+            api_version=API_VERSION,
+            http_client=http_client
+        )
+
+        # Get data from new_kb_requests table
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT issue_title, issue_description, troubleshooting_steps,
+                   product, submitted_by, submitted_date, priority
+            FROM new_kb_requests
+            WHERE id = %s
+        ''', (request_id,))
+
+        row = cursor.fetchone()
+
+        if not row:
+            conn.close()
+            return {"success": False, "error": "New TS request not found"}
+
+        request_data = {
+            'issue_title': row[0],
+            'issue_description': row[1],
+            'troubleshooting_steps': row[2],
+            'product': row[3],
+            'submitted_by': row[4],
+            'submitted_date': row[5],
+            'priority': row[6]
+        }
+
+        print(f"   Issue: {request_data['issue_title']}")
+        print(f"   Product: {request_data['product']}")
+
+        # Get KB examples to learn format
+        cursor.execute('''
+            SELECT title, content
+            FROM kb_articles
+            WHERE product = %s
+            AND length(content) > 500
+            ORDER BY RANDOM()
+            LIMIT 3
+        ''', (request_data['product'],))
+
+        kb_examples = cursor.fetchall()
+        conn.close()
+
+        print(f"   Found {len(kb_examples)} example KBs for reference")
+
+        # Build prompt
+        examples_text = "\n\n---\n\n".join([
+            f"Example KB:\nTitle: {ex[0]}\n\nContent:\n{ex[1][:1500]}..."
+            for ex in kb_examples[:3]
+        ])
+
+        prompt = f"""You are a Trend Micro KB article writer. Study the examples below to learn the exact format and style.
+
+REFERENCE KB ARTICLES (STUDY THESE CAREFULLY - follow this EXACT format and tone):
+{examples_text}
+
+---
+
+NEW TROUBLESHOOTING REQUEST:
+Issue Title: {request_data['issue_title']}
+Product: {request_data['product']}
+
+Issue Description:
+{request_data['issue_description']}
+
+Troubleshooting Steps (PERTS format):
+{request_data['troubleshooting_steps']}
+
+---
+
+TASK:
+Create a customer-facing KB article following the EXACT Trend Micro format shown in the examples above.
+
+REQUIRED STRUCTURE (match the examples exactly):
+
+1. **Title**: Short, descriptive problem statement (e.g., "Product X keeps doing Y after Z")
+
+2. **Opening Sentence**: One clear sentence describing the problem behavior
+
+3. **"Why did this happen?" Section**:
+   - Use bullet points (•)
+   - List 2-3 possible root causes
+   - Keep it simple and customer-friendly
+
+4. **"What should I do next?" Section**:
+   - Use numbered steps (1., 2., 3.)
+   - Each step should have:
+     • A brief description of what to do
+     • Sub-bullets with exact UI navigation (Click on X, Select Y, etc.)
+     • "Try [action] again" at the end of each step
+   - Include conditional logic: "If X happens, do Y"
+   - Final troubleshooting step if previous steps don't work
+
+CRITICAL REQUIREMENTS:
+- Use the EXACT section headers: "Why did this happen?" and "What should I do next?"
+- Use bullet points (•) for causes, NOT numbered lists
+- Use numbered lists (1., 2., 3.) for solutions
+- Use sub-bullets (•) under each numbered step for detailed actions
+- Write in friendly, customer-facing language (avoid technical jargon)
+- Include specific UI navigation (Click on Settings, Toggle off X, etc.)
+- Extract the working solution from "SOLUTION_THAT_WORKED" in the PERTS
+- Remove all internal information (engineer names, case numbers, troubleshooting attempts)
+- Match the tone: helpful, clear, step-by-step
+- Do NOT use sections like "Problem Description", "Environment", "Root Cause" - use the format from examples!
+
+Generate the KB article now in the EXACT format shown above:
+"""
+
+        # Call Azure OpenAI
+        print("   🔄 Calling Azure OpenAI...")
+        response = client.chat.completions.create(
+            model=AZURE_DEPLOYMENT,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert technical writer for Trend Micro. "
+                             "You create clear, structured KB articles following Trend Micro's format. "
+                             "You write in professional technical English, using active voice and clear steps."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_tokens=2000
+        )
+
+        kb_draft = response.choices[0].message.content
+        print("   ✅ KB draft generated successfully")
+
+        # Extract title
+        lines = kb_draft.split('\n')
+        title = "Generated KB Article"
+        for line in lines:
+            if line.strip() and not line.startswith('#'):
+                title = line.replace('**', '').replace('*', '').strip()
+                if len(title) > 10:
+                    break
+
+        return {
+            'success': True,
+            'title': title,
+            'content': kb_draft,
+            'metadata': {
+                'issue_title': request_data['issue_title'],
+                'product': request_data['product'],
+                'generated_at': datetime.now().isoformat(),
+                'submitted_by': request_data['submitted_by']
+            },
+            'tokens_used': response.usage.total_tokens,
+            'model': AZURE_DEPLOYMENT
+        }
+
+    except Exception as e:
+        print(f"   ❌ Error: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+
 def generate_new_kb_draft(report_id):
     """
     Standalone function to generate KB draft from engineer report
