@@ -40,10 +40,18 @@ class KBGenerator:
                 "AZURE_OPENAI_API_KEY, and AZURE_OPENAI_DEPLOYMENT"
             )
 
+        # Create custom httpx client to bypass 'proxies' parameter issue
+        import httpx
+        http_client = httpx.Client(
+            timeout=60.0,
+            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
+        )
+
         self.client = AzureOpenAI(
             azure_endpoint=AZURE_ENDPOINT,
             api_key=AZURE_API_KEY,
-            api_version=API_VERSION
+            api_version=API_VERSION,
+            http_client=http_client
         )
         self.deployment = AZURE_DEPLOYMENT
 
@@ -1587,11 +1595,20 @@ def generate_new_kb_draft(report_id):
     print(f"\n🤖 Generating KB draft for Report ID: {report_id}")
 
     try:
-        # Initialize Azure OpenAI client directly (no class)
+        # Initialize Azure OpenAI client directly with custom httpx client
+        # This bypasses the 'proxies' parameter issue in older openai versions
+        import httpx
+
+        http_client = httpx.Client(
+            timeout=60.0,
+            limits=httpx.Limits(max_keepalive_connections=5, max_connections=10)
+        )
+
         client = AzureOpenAI(
             azure_endpoint=AZURE_ENDPOINT,
             api_key=AZURE_API_KEY,
-            api_version=API_VERSION
+            api_version=API_VERSION,
+            http_client=http_client
         )
 
         # Get report data
