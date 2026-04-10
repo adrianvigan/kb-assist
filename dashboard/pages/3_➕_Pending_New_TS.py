@@ -773,6 +773,9 @@ try:
 
                                                     revision_link = f"{revision_portal_url}?token={revision_token}"
 
+                                                    # Debug: Show what email will be used
+                                                    st.info(f"🔍 DEBUG: Sending email to: {final_email}")
+
                                                     with st.spinner("📧 Sending follow-up email..."):
                                                         email_result = send_rejection_email(
                                                             request_id=current_request_id,
