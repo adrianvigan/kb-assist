@@ -131,17 +131,7 @@ try:
             nkr.reviewed_by,
             nkr.reviewed_date,
             er_orig.engineer_notes as engineer_notes,
-            COALESCE(
-                er.engineer_email,
-                CASE
-                    WHEN EXISTS (
-                        SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
-                        WHERE TABLE_NAME = 'new_kb_requests' AND COLUMN_NAME = 'submitted_by_email'
-                    )
-                    THEN nkr.submitted_by_email
-                    ELSE NULL
-                END
-            ) as engineer_email,
+            er.engineer_email,
             nkr.kb_audience,
             nkr.suggested_kbs,
             nkr.ai_match_status,
