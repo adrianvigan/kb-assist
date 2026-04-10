@@ -226,14 +226,22 @@ def submit_report():
 
         # Generate unique request ID across all tables
         # Get the highest request number from all tables that use request_id
+        # Use regex to extract only digits (handles -R1, -R2 suffixes)
         cursor.execute("""
-            SELECT COALESCE(MAX(CAST(SUBSTRING(request_id FROM 5) AS INTEGER)), 0) as max_num
+            SELECT COALESCE(MAX(
+                CAST(
+                    SUBSTRING(
+                        SUBSTRING(request_id FROM 'REQ-([0-9]+)')
+                        FROM 1 FOR 6
+                    ) AS INTEGER
+                )
+            ), 0) as max_num
             FROM (
-                SELECT request_id FROM engineer_reports WHERE request_id IS NOT NULL
+                SELECT request_id FROM engineer_reports WHERE request_id IS NOT NULL AND request_id LIKE 'REQ-%'
                 UNION ALL
-                SELECT request_id FROM new_kb_requests WHERE request_id IS NOT NULL
+                SELECT request_id FROM new_kb_requests WHERE request_id IS NOT NULL AND request_id LIKE 'REQ-%'
                 UNION ALL
-                SELECT request_id FROM kb_update_requests WHERE request_id IS NOT NULL
+                SELECT request_id FROM kb_update_requests WHERE request_id IS NOT NULL AND request_id LIKE 'REQ-%'
             ) all_requests
         """)
         max_num = cursor.fetchone()[0]
